@@ -31,6 +31,8 @@ export default defineConfig({
                 'resources/js/console/teachers/script.js',
                 'resources/js/console/teachers/create_script.js',
                 'resources/js/console/teachers/edit_script.js',
+
+                'resources/js/fuma-backoffice.js',
             ],
             refresh: true,
         }),

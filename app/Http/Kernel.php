@@ -65,5 +65,7 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'role' => \App\Http\Middleware\CheckRole::class,
+        'fuma.auth' => \App\Http\Middleware\FumaAuth::class,
+        'fuma.role' => \App\Http\Middleware\FumaRole::class,
     ];
 }

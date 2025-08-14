@@ -1,10 +1,18 @@
 <?php
 
-use App\Enums\UserRole;
-use App\Http\Controllers\Console\UserController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Fuma\DashboardController;
+use App\Http\Controllers\Fuma\TournamentController;
+use App\Http\Controllers\Fuma\TeamController;
+use App\Http\Controllers\Fuma\PlayerController;
+use App\Http\Controllers\Fuma\MatchController;
+use App\Http\Controllers\Fuma\CommitteeController;
+use App\Http\Controllers\Fuma\UserController;
+use App\Http\Controllers\Fuma\RoleController;
+use App\Http\Controllers\Fuma\StatisticsController;
+use App\Http\Controllers\Fuma\StandingsController;
+use App\Http\Controllers\Fuma\ProfileController;
+use App\Http\Controllers\Fuma\AuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,20 +29,60 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/', [DashboardController::class, 'index']);
+// FUMA Backoffice Routes
+Route::prefix('fuma')->name('fuma.')->group(function () {
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
+    // Public routes
+    Route::get('login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('login', [AuthController::class, 'login'])->name('login.post');
 
-require __DIR__ . '/auth.php';
+    // Protected routes
+    Route::middleware(['auth', 'fuma.auth'])->group(function () {
 
-Route::prefix('console')->middleware(['auth', 'verified'])->group(function () {
-    Route::middleware('role:' . UserRole::ADMIN)->group(function () {
-        Route::prefix('master-data')->group(function () {
+        // Dashboard
+        Route::get('/', [DashboardController::class, 'index']);
+        Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        // Tournaments
+        Route::resource('tournaments', TournamentController::class);
+        Route::get('tournaments/{id}/standings', [TournamentController::class, 'standings'])->name('tournaments.standings');
+
+        // Teams
+        Route::resource('teams', TeamController::class);
+        Route::post('teams/{id}/players', [TeamController::class, 'addPlayer'])->name('teams.add-player');
+
+        // Players
+        Route::resource('players', PlayerController::class);
+        Route::put('players/{id}/stats', [PlayerController::class, 'updateStats'])->name('players.update-stats');
+
+        // Matches
+        Route::resource('matches', MatchController::class);
+        Route::post('matches/{id}/events', [MatchController::class, 'addEvent'])->name('matches.add-event');
+        Route::put('matches/{id}/score', [MatchController::class, 'updateScore'])->name('matches.update-score');
+
+        // Committees
+        Route::resource('committees', CommitteeController::class);
+
+        // Statistics
+        Route::get('statistics', [StatisticsController::class, 'index'])->name('statistics.index');
+
+        // Standings
+        Route::get('standings', [StandingsController::class, 'index'])->name('standings.index');
+
+        // Profile
+        Route::get('profile', [ProfileController::class, 'edit'])->name('profile');
+        Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
+
+        // Logout
+        Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+
+        // Admin only routes
+        Route::middleware(['fuma.role:admin'])->group(function () {
             Route::resource('users', UserController::class);
+            Route::resource('roles', RoleController::class);
         });
     });
 });
+
+require __DIR__ . '/auth.php';

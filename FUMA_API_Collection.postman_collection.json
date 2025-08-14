@@ -1,0 +1,381 @@
+{
+	"info": {
+		"_postman_id": "fuma-api-collection",
+		"name": "FUMA API Collection",
+		"description": "Complete API collection for FUMA Football Tournament Management System",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test User\",\n    \"email\": \"test@example.com\",\n    \"whatsapp\": \"081234567890\",\n    \"password\": \"password\",\n    \"password_confirmation\": \"password\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@fuma.com\",\n    \"password\": \"password\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "login"]
+						}
+					}
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/me",
+							"host": ["{{base_url}}"],
+							"path": ["api", "me"]
+						}
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/logout",
+							"host": ["{{base_url}}"],
+							"path": ["api", "logout"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Tournaments",
+			"item": [
+				{
+					"name": "Get All Tournaments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/tournaments",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tournaments"]
+						}
+					}
+				},
+				{
+					"name": "Get Tournament by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/tournaments/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tournaments", "1"]
+						}
+					}
+				},
+				{
+					"name": "Create Tournament",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"New Tournament\",\n    \"description\": \"Tournament description\",\n    \"start_date\": \"2024-12-01\",\n    \"end_date\": \"2024-12-31\",\n    \"max_teams\": 16,\n    \"venue\": \"Main Stadium\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tournaments",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tournaments"]
+						}
+					}
+				},
+				{
+					"name": "Update Tournament",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Tournament Name\",\n    \"description\": \"Updated description\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tournaments/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tournaments", "1"]
+						}
+					}
+				},
+				{
+					"name": "Get Tournament Standings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/tournaments/1/standings",
+							"host": ["{{base_url}}"],
+							"path": ["api", "tournaments", "1", "standings"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Teams",
+			"item": [
+				{
+					"name": "Get All Teams",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/teams",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams"]
+						}
+					}
+				},
+				{
+					"name": "Get Team by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/teams/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams", "1"]
+						}
+					}
+				},
+				{
+					"name": "Create Team",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"New Team\",\n    \"description\": \"Team description\",\n    \"city\": \"Jakarta\",\n    \"country\": \"Indonesia\",\n    \"manager_name\": \"Team Manager\",\n    \"manager_phone\": \"081234567890\",\n    \"manager_email\": \"manager@team.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/teams",
+							"host": ["{{base_url}}"],
+							"path": ["api", "teams"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Players",
+			"item": [
+				{
+					"name": "Get All Players",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/players",
+							"host": ["{{base_url}}"],
+							"path": ["api", "players"]
+						}
+					}
+				},
+				{
+					"name": "Get Player by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/players/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "players", "1"]
+						}
+					}
+				},
+				{
+					"name": "Create Player",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"New Player\",\n    \"position\": \"Forward\",\n    \"jersey_number\": \"11\",\n    \"birth_date\": \"1995-01-01\",\n    \"nationality\": \"Indonesia\",\n    \"height\": 175,\n    \"weight\": 70,\n    \"team_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/players",
+							"host": ["{{base_url}}"],
+							"path": ["api", "players"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Matches",
+			"item": [
+				{
+					"name": "Get All Matches",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/matches",
+							"host": ["{{base_url}}"],
+							"path": ["api", "matches"]
+						}
+					}
+				},
+				{
+					"name": "Get Match by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/matches/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "matches", "1"]
+						}
+					}
+				},
+				{
+					"name": "Create Match",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tournament_id\": 1,\n    \"home_team_id\": 1,\n    \"away_team_id\": 2,\n    \"stage\": \"group\",\n    \"scheduled_at\": \"2024-12-15 15:00:00\",\n    \"venue\": \"Main Stadium\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/matches",
+							"host": ["{{base_url}}"],
+							"path": ["api", "matches"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "your_auth_token_here",
+			"type": "string"
+		}
+	]
+}

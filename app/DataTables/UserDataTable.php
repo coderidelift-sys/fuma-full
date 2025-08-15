@@ -25,7 +25,7 @@ class UserDataTable extends DataTable
             ->addIndexColumn()
             ->addColumn('action', 'console.users.action')
             ->editColumn('created_at', function ($users) {
-                return $users->created_at->format('d F Y H:i');
+                return $users->created_at?->format('d F Y H:i');
             })
             ->editColumn('role', function ($users) {
                 return $users->roles()->first()?->display_name ?: 'N/A';

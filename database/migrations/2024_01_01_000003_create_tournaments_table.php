@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
+            $table->integer('prize_pool')->nullable();
             $table->enum('status', ['upcoming', 'ongoing', 'completed'])->default('upcoming');
             $table->date('start_date');
             $table->date('end_date');

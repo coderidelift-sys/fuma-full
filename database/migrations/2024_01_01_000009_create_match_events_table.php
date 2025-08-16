@@ -12,7 +12,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('match_id')->constrained()->onDelete('cascade');
             $table->foreignId('player_id')->nullable()->constrained()->onDelete('set null');
-            $table->enum('type', ['goal', 'yellow_card', 'red_card', 'substitution', 'injury', 'other']);
+            $table->foreignId('team_id')->nullable()->constrained()->onDelete('cascade');
+            $table->enum('type', ['goal', 'yellow_card', 'red_card', 'substitution', 'injury', 'assist', 'clean_sheet', 'foul', 'other']);
             $table->integer('minute');
             $table->text('description')->nullable();
             $table->json('metadata')->nullable(); // Additional data like assist, card reason, etc.

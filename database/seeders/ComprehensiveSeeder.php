@@ -88,38 +88,37 @@ class ComprehensiveSeeder extends Seeder
             $this->command->info('Seeding roles...');
             $this->seedRoles();
 
-            $this->command->info('Seeding users in bulk...');
-            $users = $this->seedUsersBulk();
+            $this->command->info('Seeding users...');
+            $users = $this->seedUsers();
+
+            $this->command->info('Assigning roles...');
             $this->assignRoles($users);
 
             $this->command->info('Seeding tournaments...');
             $tournaments = $this->seedTournaments($users);
 
-            $this->command->info('Seeding teams in bulk...');
-            $teams = $this->seedTeamsBulk($users);
+            $this->command->info('Seeding teams...');
+            $teams = $this->seedTeams($users);
 
             $this->command->info('Linking tournament teams...');
-            $this->seedTournamentTeamsFast($tournaments, $teams);
+            $this->seedTournamentTeams($tournaments, $teams);
 
-            $this->command->info('Seeding players in bulk...');
-            $this->seedPlayersBulk($teams);
+            $this->command->info('Seeding players...');
+            $this->seedPlayers($teams);
 
-            $this->command->info('Seeding matches in bulk...');
-            $matches = $this->seedMatchesBulk($tournaments, $teams);
+            $this->command->info('Seeding matches...');
+            $matches = $this->seedMatches($tournaments);
 
-            $this->command->info('Seeding match events in bulk...');
-            $this->seedMatchEventsBulk($matches);
+            $this->command->info('Seeding match events...');
+            $this->seedMatchEvents($matches);
 
-            $this->command->info('Seeding committees in bulk...');
-            $this->seedCommitteesBulk($tournaments, $users);
+            $this->command->info('Seeding committees...');
+            $this->seedCommittees($tournaments, $users);
 
-            $this->command->info('✅ Fast seeding completed!');
+            $this->command->info('✅ Comprehensive seeding completed!');
         });
     }
 
-    /** -------------------------
-     * Seeder Steps (Bulk Version)
-     * ------------------------- */
     private function seedRoles(): void
     {
         $roles = [
@@ -132,44 +131,9 @@ class ComprehensiveSeeder extends Seeder
         Role::insertOrIgnore($roles);
     }
 
-    private function assignRoles($users)
-    {
-        $roleMap = Role::pluck('id', 'name');
-
-        foreach ($users as $user) {
-            if (str_contains($user->email, 'admin')) {
-                DB::table('user_roles')->insert([
-                    'role_id' => $roleMap['admin'],
-                    'user_id' => $user->id
-                ]);
-            } elseif (str_contains($user->email, 'organizer')) {
-                DB::table('user_roles')->insert([
-                    'role_id' => $roleMap['organizer'],
-                    'user_id' => $user->id
-                ]);
-            } elseif (str_contains($user->email, 'manager')) {
-                DB::table('user_roles')->insert([
-                    'role_id' => $roleMap['manager'],
-                    'user_id' => $user->id
-                ]);
-            } elseif (str_contains($user->email, 'committee')) {
-                DB::table('user_roles')->insert([
-                    'role_id' => $roleMap['committee'],
-                    'user_id' => $user->id
-                ]);
-            } else {
-                DB::table('user_roles')->insert([
-                    'role_id' => $roleMap['user'],
-                    'user_id' => $user->id
-                ]);
-            }
-        }
-    }
-
-    private function seedUsersBulk()
+    private function seedUsers()
     {
         $data = [];
-        $roleMap = Role::pluck('id', 'name');
 
         // Admin
         $data[] = [
@@ -181,7 +145,7 @@ class ComprehensiveSeeder extends Seeder
             'email_verified_at' => now(),
         ];
 
-        // Organizer, Manager, Committee
+        // Organizers
         foreach (range(1, 5) as $i) {
             $data[] = [
                 'name' => "Organizer $i",
@@ -192,7 +156,9 @@ class ComprehensiveSeeder extends Seeder
                 'email_verified_at' => now(),
             ];
         }
-        foreach (range(1, 24) as $i) {
+
+        // Managers
+        foreach (range(1, count($this->teamNames)) as $i) {
             $data[] = [
                 'name' => "Manager Team $i",
                 'email' => "manager$i@fuma.com",
@@ -202,6 +168,8 @@ class ComprehensiveSeeder extends Seeder
                 'email_verified_at' => now(),
             ];
         }
+
+        // Committee members
         foreach (range(1, 15) as $i) {
             $data[] = [
                 'name' => "Committee Member $i",
@@ -217,21 +185,41 @@ class ComprehensiveSeeder extends Seeder
         return User::all();
     }
 
+    private function assignRoles($users)
+    {
+        $roleMap = Role::pluck('id', 'name');
+
+        foreach ($users as $user) {
+            $role = 'user';
+            if (str_contains($user->email, 'admin')) $role = 'admin';
+            elseif (str_contains($user->email, 'organizer')) $role = 'organizer';
+            elseif (str_contains($user->email, 'manager')) $role = 'manager';
+            elseif (str_contains($user->email, 'committee')) $role = 'committee';
+
+            DB::table('user_roles')->insert([
+                'role_id' => $roleMap[$role],
+                'user_id' => $user->id
+            ]);
+        }
+    }
+
     private function seedTournaments($users)
     {
         $organizers = $users->filter(fn($u) => str_contains($u->email, 'organizer'))->values();
-        $data = [
+        $tournamentsData = [
             ['Liga FUMA 2024', 'ongoing', -30, 60, 16, 'Stadion Utama Jakarta'],
             ['Piala FUMA Cup', 'ongoing', -15, 45, 8, 'Stadion Bandung Lautan Api'],
             ['Championship FUMA 2024', 'upcoming', 30, 90, 12, 'Stadion GBK'],
             ['Youth League FUMA', 'upcoming', 45, 105, 10, 'Stadion Pakansari'],
             ['Liga FUMA 2023', 'completed', -180, -90, 14, 'Stadion Manahan Solo'],
         ];
+
         $records = [];
-        foreach ($data as $t) {
+        foreach ($tournamentsData as $t) {
             $records[] = [
                 'name' => $t[0],
-                'description' => $this->faker->sentence(8),
+                'description' => $this->faker->sentence(10),
+                'prize_pool' => rand(10000000, 500000000), // 10 juta - 500 juta
                 'status' => $t[1],
                 'start_date' => Carbon::now()->addDays($t[2]),
                 'end_date' => Carbon::now()->addDays($t[3]),
@@ -244,10 +232,11 @@ class ComprehensiveSeeder extends Seeder
         return Tournament::all();
     }
 
-    private function seedTeamsBulk($users)
+    private function seedTeams($users)
     {
         $managers = $users->filter(fn($u) => str_contains($u->email, 'manager'))->values();
         $records = [];
+
         foreach ($this->teamNames as $i => $name) {
             $m = $managers[$i % $managers->count()];
             $records[] = [
@@ -263,18 +252,19 @@ class ComprehensiveSeeder extends Seeder
                 'trophies_count' => rand(0, 15),
             ];
         }
+
         Team::insert($records);
         return Team::all();
     }
 
-    private function seedTournamentTeamsFast($tournaments, $teams)
+    private function seedTournamentTeams($tournaments, $teams)
     {
-        $pivotData = [];
-        foreach ($tournaments as $tournament) {
-            $selectedTeams = $teams->random(min($tournament->max_teams, $teams->count()));
+        $pivot = [];
+        foreach ($tournaments as $t) {
+            $selectedTeams = $teams->random(min($t->max_teams, $teams->count()));
             foreach ($selectedTeams as $team) {
-                $pivotData[] = [
-                    'tournament_id' => $tournament->id,
+                $pivot[] = [
+                    'tournament_id' => $t->id,
                     'team_id' => $team->id,
                     'status' => 'approved',
                     'points' => 0,
@@ -288,16 +278,16 @@ class ComprehensiveSeeder extends Seeder
                 ];
             }
         }
-        DB::table('tournament_teams')->insert($pivotData);
+        DB::table('tournament_teams')->insert($pivot);
     }
 
-    private function seedPlayersBulk($teams)
+    private function seedPlayers($teams)
     {
         $records = [];
         foreach ($teams as $team) {
             $jerseys = range(1, 99);
             shuffle($jerseys);
-            foreach (range(1, rand(18, 25)) as $i) {
+            foreach (range(0, rand(18, 25) - 1) as $i) {
                 $records[] = [
                     'name' => $this->faker->name,
                     'position' => $this->faker->randomElement($this->positions),
@@ -311,26 +301,27 @@ class ComprehensiveSeeder extends Seeder
                 ];
             }
         }
-        collect($records)->chunk(500)->each(fn($chunk) => Player::insert($chunk->toArray()));
+        collect($records)->chunk(500)->each(fn($c) => Player::insert($c->toArray()));
     }
 
-    private function seedMatchesBulk($tournaments, $teams)
+    private function seedMatches($tournaments)
     {
         $records = [];
-        foreach ($tournaments as $tournament) {
-            $tTeams = $tournament->teams;
+        foreach ($tournaments as $t) {
+            $tTeams = $t->teams;
             if ($tTeams->count() < 2) continue;
-            foreach (range(1, rand(3, 15)) as $i) {
+            $numMatches = rand(3, 15);
+            for ($i = 0; $i < $numMatches; $i++) {
                 $home = $tTeams->random();
                 $away = $tTeams->where('id', '!=', $home->id)->random();
                 $records[] = [
-                    'tournament_id' => $tournament->id,
+                    'tournament_id' => $t->id,
                     'home_team_id' => $home->id,
                     'away_team_id' => $away->id,
                     'stage' => $this->faker->randomElement(['group', 'round_of_16', 'quarter_final', 'semi_final', 'final']),
                     'status' => 'scheduled',
-                    'scheduled_at' => $this->faker->dateTimeBetween($tournament->start_date, $tournament->end_date),
-                    'venue' => $tournament->venue
+                    'scheduled_at' => $this->faker->dateTimeBetween($t->start_date, $t->end_date),
+                    'venue' => $t->venue
                 ];
             }
         }
@@ -338,38 +329,46 @@ class ComprehensiveSeeder extends Seeder
         return MatchModel::all();
     }
 
-    private function seedMatchEventsBulk($matches)
+    private function seedMatchEvents($matches)
     {
         $records = [];
         foreach ($matches as $match) {
+            $players = Player::whereIn('team_id', [$match->home_team_id, $match->away_team_id])->get();
             foreach (range(1, rand(3, 8)) as $i) {
+                $player = $players->random();
                 $records[] = [
                     'match_id' => $match->id,
-                    'player_id' => Player::whereIn('team_id', [$match->home_team_id, $match->away_team_id])
-                        ->inRandomOrder()->first()->id,
-                    'type' => $this->faker->randomElement(['goal', 'yellow_card', 'red_card', 'substitution']),
+                    'player_id' => $player->id,
+                    'team_id' => $player->team_id,
+                    'type' => $this->faker->randomElement(['goal', 'yellow_card', 'red_card', 'substitution', 'injury', 'other']),
                     'minute' => rand(1, 90),
-                    'description' => $this->faker->sentence
+                    'description' => $this->faker->sentence(6),
                 ];
             }
         }
-        collect($records)->chunk(500)->each(fn($chunk) => MatchEvent::insert($chunk->toArray()));
+        // Insert in chunks untuk mencegah memory overflow
+        collect($records)->chunk(500)->each(fn($c) => MatchEvent::insert($c->toArray()));
     }
 
-    private function seedCommitteesBulk($tournaments, $users)
+    private function seedCommittees($tournaments, $users)
     {
-        $committeeUsers = $users->filter(fn($u) => str_contains($u->email, 'committee'));
+        $committeeUsers = $users->filter(fn($u) => str_contains($u->email, 'committee'))->values();
         $records = [];
-        foreach ($tournaments as $tournament) {
-            foreach ($committeeUsers->random(min(5, $committeeUsers->count())) as $cu) {
+
+        foreach ($tournaments as $t) {
+            $assigned = $committeeUsers->random(min(count($this->committeePositions), $committeeUsers->count()));
+            foreach ($this->committeePositions as $i => $position) {
+                if (!isset($assigned[$i])) continue;
+                $user = $assigned[$i];
                 $records[] = [
-                    'tournament_id' => $tournament->id,
-                    'user_id' => $cu->id,
-                    'position' => $this->faker->randomElement($this->committeePositions),
-                    'status' => 'active'
+                    'tournament_id' => $t->id,
+                    'user_id' => $user->id,
+                    'position' => $position,
+                    // 'contact' => $user->phone,
                 ];
             }
         }
+
         Committee::insert($records);
     }
 }

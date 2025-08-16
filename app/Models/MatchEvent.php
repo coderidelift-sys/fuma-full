@@ -12,6 +12,7 @@ class MatchEvent extends Model
     protected $fillable = [
         'match_id',
         'player_id',
+        'team_id',
         'type',
         'minute',
         'description',
@@ -24,12 +25,17 @@ class MatchEvent extends Model
 
     public function match()
     {
-        return $this->belongsTo(MatchModel::class);
+        return $this->belongsTo(MatchModel::class, 'match_id');
     }
 
     public function player()
     {
         return $this->belongsTo(Player::class);
+    }
+
+    public function team()
+    {
+        return $this->belongsTo(Team::class);
     }
 
     public function scopeGoals($query)

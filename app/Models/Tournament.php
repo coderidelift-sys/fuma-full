@@ -12,6 +12,7 @@ class Tournament extends Model
     protected $fillable = [
         'name',
         'description',
+        'prize_pool',
         'status',
         'start_date',
         'end_date',
@@ -26,6 +27,10 @@ class Tournament extends Model
         'end_date' => 'date',
     ];
 
+    protected $appends = [
+        'type',
+    ];
+
     public function organizer()
     {
         return $this->belongsTo(User::class, 'organizer_id');
@@ -34,8 +39,8 @@ class Tournament extends Model
     public function teams()
     {
         return $this->belongsToMany(Team::class, 'tournament_teams')
-                    ->withPivot(['status', 'points', 'goals_for', 'goals_against', 'goal_difference', 'matches_played', 'wins', 'draws', 'losses'])
-                    ->withTimestamps();
+            ->withPivot(['status', 'points', 'goals_for', 'goals_against', 'goal_difference', 'matches_played', 'wins', 'draws', 'losses'])
+            ->withTimestamps();
     }
 
     public function matches()
@@ -51,9 +56,9 @@ class Tournament extends Model
     public function getStandingsAttribute()
     {
         return $this->teams()->orderBy('pivot_points', 'desc')
-                              ->orderBy('pivot_goal_difference', 'desc')
-                              ->orderBy('pivot_goals_for', 'desc')
-                              ->get();
+            ->orderBy('pivot_goal_difference', 'desc')
+            ->orderBy('pivot_goals_for', 'desc')
+            ->get();
     }
 
     public function scopeActive($query)
@@ -69,5 +74,21 @@ class Tournament extends Model
     public function scopeCompleted($query)
     {
         return $query->where('status', 'completed');
+    }
+
+    public function getTypeAttribute()
+    {
+        $ranges = [
+            16 => 'Knockout',
+            32 => 'Group & Knockout',
+        ];
+
+        foreach ($ranges as $limit => $label) {
+            if ($this->max_teams <= $limit) {
+                return $label;
+            }
+        }
+
+        return 'League';
     }
 }

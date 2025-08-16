@@ -27,6 +27,10 @@ class Team extends Model
         'rating' => 'decimal:2',
     ];
 
+    protected $appends = [
+        'players_count',
+    ];
+
     public function manager()
     {
         return $this->belongsTo(User::class, 'manager_id');
@@ -67,5 +71,10 @@ class Team extends Model
     public function scopeByCity($query, $city)
     {
         return $query->where('city', $city);
+    }
+
+    public function getPlayersCountAttribute()
+    {
+        return $this->players()->count();
     }
 }

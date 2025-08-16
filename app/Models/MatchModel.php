@@ -45,7 +45,7 @@ class MatchModel extends Model
 
     public function events()
     {
-        return $this->hasMany(MatchEvent::class);
+        return $this->hasMany(MatchEvent::class, 'match_id');
     }
 
     public function scopeUpcoming($query)

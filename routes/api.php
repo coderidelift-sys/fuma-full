@@ -36,7 +36,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/tournaments/{id}/standings', [TournamentController::class, 'standings']);
 
     Route::middleware('role:admin,organizer')->group(function () {
-        Route::post('/tournaments', [TournamentController::class, 'store']);
+        Route::post('/tournaments', [TournamentController::class, 'store'])->name('api.tournaments.store');
         Route::put('/tournaments/{id}', [TournamentController::class, 'update']);
         Route::delete('/tournaments/{id}', [TournamentController::class, 'destroy']);
         Route::post('/tournaments/{id}/teams', [TournamentController::class, 'addTeam']);
@@ -47,7 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/teams/{id}', [TeamController::class, 'show']);
 
     Route::middleware('role:admin,manager')->group(function () {
-        Route::post('/teams', [TeamController::class, 'store']);
+        Route::post('/teams', [TeamController::class, 'store'])->name('api.teams.store');
         Route::put('/teams/{id}', [TeamController::class, 'update']);
         Route::delete('/teams/{id}', [TeamController::class, 'destroy']);
         Route::post('/teams/{id}/players', [TeamController::class, 'addPlayer']);
@@ -58,7 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/players/{id}', [PlayerController::class, 'show']);
 
     Route::middleware('role:admin,manager,organizer')->group(function () {
-        Route::post('/players', [PlayerController::class, 'store']);
+        Route::post('/players', [PlayerController::class, 'store'])->name('api.players.store');
         Route::put('/players/{id}', [PlayerController::class, 'update']);
         Route::delete('/players/{id}', [PlayerController::class, 'destroy']);
         Route::put('/players/{id}/stats', [PlayerController::class, 'updateStats']);
@@ -69,7 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/matches/{id}', [MatchController::class, 'show']);
 
     Route::middleware('role:admin,organizer,committee')->group(function () {
-        Route::post('/matches', [MatchController::class, 'store']);
+        Route::post('/matches', [MatchController::class, 'store'])->name('api.matches.store');
         Route::put('/matches/{id}', [MatchController::class, 'update']);
         Route::delete('/matches/{id}', [MatchController::class, 'destroy']);
         Route::post('/matches/{id}/events', [MatchController::class, 'addEvent']);

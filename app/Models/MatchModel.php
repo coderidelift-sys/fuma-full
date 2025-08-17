@@ -19,13 +19,32 @@ class MatchModel extends Model
         'status',
         'scheduled_at',
         'venue',
+        'venue_id',
+        'referee',
         'home_score',
         'away_score',
-        'notes'
+        'current_minute',
+        'duration',
+        'weather',
+        'attendance',
+        'officials',
+        'notes',
+        'started_at',
+        'paused_at',
+        'resumed_at',
+        'completed_at'
     ];
 
     protected $casts = [
         'scheduled_at' => 'datetime',
+        'started_at' => 'datetime',
+        'paused_at' => 'datetime',
+        'resumed_at' => 'datetime',
+        'completed_at' => 'datetime',
+        'officials' => 'array',
+        'duration' => 'integer',
+        'current_minute' => 'integer',
+        'attendance' => 'integer',
     ];
 
     public function tournament()
@@ -46,6 +65,21 @@ class MatchModel extends Model
     public function events()
     {
         return $this->hasMany(MatchEvent::class, 'match_id');
+    }
+
+    public function matchEvents()
+    {
+        return $this->hasMany(MatchEvent::class, 'match_id');
+    }
+
+    public function lineups()
+    {
+        return $this->hasMany(MatchLineup::class, 'match_id');
+    }
+
+    public function venue()
+    {
+        return $this->belongsTo(Venue::class);
     }
 
     public function scopeUpcoming($query)

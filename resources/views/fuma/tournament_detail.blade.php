@@ -172,7 +172,7 @@
                         <a class="nav-link" href="{{ route('teams.index') }}">Teams</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="matches.html">Matches</a>
+                        <a class="nav-link" href="{{ route('matches.index') }}">Matches</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('players.index') }}">Players</a>
@@ -536,7 +536,7 @@
                         <!-- Match List -->
                         <div class="list-group">
                             @forelse ($matches as $match)
-                                <div class="list-group-item">
+                                <a class="list-group-item" href="{{ route('matches.show', $match['id']) }}">
                                     <div class="row align-items-center">
                                         {{-- Home Team --}}
                                         <div class="col-md-4 text-end">
@@ -579,7 +579,7 @@
                                             <strong>{{ $match['away_team'] }}</strong>
                                         </div>
                                     </div>
-                                </div>
+                                </a>
                             @empty
                                 <div class="list-group-item text-center text-muted">
                                     <i class="fas fa-futbol fa-2x mb-2"></i>
@@ -802,8 +802,28 @@
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Location</label>
-                                        <input type="text" class="form-control" name="venue" id="location"
-                                            value="{{ $tournament->venue }}" required>
+                                        <select class="form-select" id="venueSelect" name="venue_id" required>
+                                            <option value="">
+                                                Select Location
+                                            </option>
+                                            @foreach ($venues as $venue)
+                                                <option value="{{ $venue->id }}"
+                                                        data-name="{{ $venue->name }}"
+                                                    {{ $venue == $tournament->venue_id ? 'selected' : '' }}>
+                                                    {{ $venue->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <input type="hidden" class="form-control" name="venue" id="location"
+                                            value="{{ $tournament->venue }}">
+
+                                        <script>
+                                            document.getElementById('venueSelect').addEventListener('change', function() {
+                                                var selectedOption = this.options[this.selectedIndex];
+                                                var venueName = selectedOption.getAttribute('data-name');
+                                                document.getElementById('location').value = venueName;
+                                            });
+                                        </script>
                                     </div>
                                 </div>
 
@@ -838,7 +858,8 @@
     <!-- Add Team Modal -->
     <div class="modal fade" id="addTeamModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
-            <form class="modal-content" method="POST" action="{{ route('tournaments.addTeam', $tournament->id) }}">
+            <form class="modal-content" method="POST"
+                action="{{ route('tournaments.addTeam', $tournament->id) }}">
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title">Add Team to Tournament</h5>

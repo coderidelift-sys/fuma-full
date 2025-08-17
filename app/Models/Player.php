@@ -856,4 +856,388 @@ class Player extends Model
             ]
         ];
     }
+
+    /**
+     * Get player achievements based on performance data
+     */
+    public function getAchievementsAttribute(): array
+    {
+        $achievements = [];
+
+        // Get current season stats
+        $currentGoals = $this->goals_scored ?? 0;
+        $currentAssists = $this->assists ?? 0;
+        $currentCleanSheets = $this->clean_sheets ?? 0;
+        $currentMatches = $this->getMatchesCount();
+        $currentRating = $this->rating ?? 0;
+
+        // Goal-related achievements
+        if ($currentGoals >= 20) {
+            $achievements[] = [
+                'title' => 'Golden Boot',
+                'description' => 'Scored 20+ goals in a season',
+                'icon' => 'fas fa-bullseye',
+                'color' => 'bg-warning',
+                'year' => date('Y'),
+                'value' => $currentGoals . ' goals'
+            ];
+        } elseif ($currentGoals >= 15) {
+            $achievements[] = [
+                'title' => 'Top Scorer',
+                'description' => 'Scored 15+ goals in a season',
+                'icon' => 'fas fa-futbol',
+                'color' => 'bg-success',
+                'year' => date('Y'),
+                'value' => $currentGoals . ' goals'
+            ];
+        } elseif ($currentGoals >= 10) {
+            $achievements[] = [
+                'title' => 'Goal Machine',
+                'description' => 'Scored 10+ goals in a season',
+                'icon' => 'fas fa-fire',
+                'color' => 'bg-danger',
+                'year' => date('Y'),
+                'value' => $currentGoals . ' goals'
+            ];
+        }
+
+        // Assist-related achievements
+        if ($currentAssists >= 15) {
+            $achievements[] = [
+                'title' => 'Playmaker',
+                'description' => 'Provided 15+ assists in a season',
+                'icon' => 'fas fa-hands-helping',
+                'color' => 'bg-info',
+                'year' => date('Y'),
+                'value' => $currentAssists . ' assists'
+            ];
+        } elseif ($currentAssists >= 10) {
+            $achievements[] = [
+                'title' => 'Creative Force',
+                'description' => 'Provided 10+ assists in a season',
+                'icon' => 'fas fa-magic',
+                'color' => 'bg-primary',
+                'year' => date('Y'),
+                'value' => $currentAssists . ' assists'
+            ];
+        }
+
+        // Clean sheet achievements (for goalkeepers and defenders)
+        if (in_array($this->position, ['GK', 'DEF'])) {
+            if ($currentCleanSheets >= 15) {
+                $achievements[] = [
+                    'title' => 'Wall Defender',
+                    'description' => 'Kept 15+ clean sheets in a season',
+                    'icon' => 'fas fa-shield-alt',
+                    'color' => 'bg-success',
+                    'year' => date('Y'),
+                    'value' => $currentCleanSheets . ' clean sheets'
+                ];
+            } elseif ($currentCleanSheets >= 10) {
+                $achievements[] = [
+                    'title' => 'Defensive Rock',
+                    'description' => 'Kept 10+ clean sheets in a season',
+                    'icon' => 'fas fa-lock',
+                    'color' => 'bg-secondary',
+                    'year' => date('Y'),
+                    'value' => $currentCleanSheets . ' clean sheets'
+                ];
+            }
+        }
+
+        // Match participation achievements
+        if ($currentMatches >= 30) {
+            $achievements[] = [
+                'title' => 'Iron Man',
+                'description' => 'Played 30+ matches in a season',
+                'icon' => 'fas fa-dumbbell',
+                'color' => 'bg-dark',
+                'year' => date('Y'),
+                'value' => $currentMatches . ' matches'
+            ];
+        } elseif ($currentMatches >= 25) {
+            $achievements[] = [
+                'title' => 'Regular Starter',
+                'description' => 'Played 25+ matches in a season',
+                'icon' => 'fas fa-star',
+                'color' => 'bg-warning',
+                'year' => date('Y'),
+                'value' => $currentMatches . ' matches'
+            ];
+        }
+
+        // Rating-based achievements
+        if ($currentRating >= 8.5) {
+            $achievements[] = [
+                'title' => 'World Class',
+                'description' => 'Maintained 8.5+ rating',
+                'icon' => 'fas fa-crown',
+                'color' => 'bg-warning',
+                'year' => date('Y'),
+                'value' => number_format($currentRating, 1) . ' rating'
+            ];
+        } elseif ($currentRating >= 8.0) {
+            $achievements[] = [
+                'title' => 'Elite Player',
+                'description' => 'Maintained 8.0+ rating',
+                'icon' => 'fas fa-gem',
+                'color' => 'bg-info',
+                'year' => date('Y'),
+                'value' => number_format($currentRating, 1) . ' rating'
+            ];
+        }
+
+        // Position-specific achievements
+        if ($this->position === 'GK') {
+            if ($currentCleanSheets >= 20) {
+                $achievements[] = [
+                    'title' => 'Golden Glove',
+                    'description' => 'Goalkeeper with 20+ clean sheets',
+                    'icon' => 'fas fa-hand-paper',
+                    'color' => 'bg-warning',
+                    'year' => date('Y'),
+                    'value' => $currentCleanSheets . ' clean sheets'
+                ];
+            }
+        } elseif ($this->position === 'FWD') {
+            if ($currentGoals >= 25) {
+                $achievements[] = [
+                    'title' => 'Striker Legend',
+                    'description' => 'Forward with 25+ goals',
+                    'icon' => 'fas fa-bolt',
+                    'color' => 'bg-danger',
+                    'year' => date('Y'),
+                    'value' => $currentGoals . ' goals'
+                ];
+            }
+        } elseif ($this->position === 'MID') {
+            if ($currentAssists >= 20) {
+                $achievements[] = [
+                    'title' => 'Midfield Maestro',
+                    'description' => 'Midfielder with 20+ assists',
+                    'icon' => 'fas fa-music',
+                    'color' => 'bg-primary',
+                    'year' => date('Y'),
+                    'value' => $currentAssists . ' assists'
+                ];
+            }
+        }
+
+        // Career milestone achievements
+        $totalGoals = $this->getTotalCareerStatsAttribute()['goals'];
+        if ($totalGoals >= 100) {
+            $achievements[] = [
+                'title' => 'Century Club',
+                'description' => 'Scored 100+ career goals',
+                'icon' => 'fas fa-trophy',
+                'color' => 'bg-warning',
+                'year' => 'Career',
+                'value' => $totalGoals . ' total goals'
+            ];
+        } elseif ($totalGoals >= 50) {
+            $achievements[] = [
+                'title' => 'Half Century',
+                'description' => 'Scored 50+ career goals',
+                'icon' => 'fas fa-medal',
+                'color' => 'bg-secondary',
+                'year' => 'Career',
+                'value' => $totalGoals . ' total goals'
+            ];
+        }
+
+        // Sort achievements by importance (more recent and higher values first)
+        usort($achievements, function($a, $b) {
+            // Current year achievements first
+            if ($a['year'] === date('Y') && $b['year'] !== date('Y')) return -1;
+            if ($b['year'] === date('Y') && $a['year'] !== date('Y')) return 1;
+
+            // Then by year (newer first)
+            if ($a['year'] !== $b['year']) {
+                return $b['year'] <=> $a['year'];
+            }
+
+            return 0;
+        });
+
+        return $achievements;
+    }
+
+    /**
+     * Get tournament-specific achievements
+     */
+    public function getTournamentAchievementsAttribute(): array
+    {
+        $achievements = [];
+
+        if (!$this->team) return $achievements;
+
+        // Get tournaments where player's team participated
+        $tournaments = $this->team->tournaments()
+            ->wherePivot('status', 'registered')
+            ->orderBy('start_date', 'desc')
+            ->get();
+
+        foreach ($tournaments as $tournament) {
+            $season = $this->getSeasonFromDate($tournament->start_date);
+
+            // Get matches for this player in this tournament
+            $matches = MatchModel::where('tournament_id', $tournament->id)
+                ->where(function($query) {
+                    $query->where('home_team_id', $this->team_id)
+                          ->orWhere('away_team_id', $this->team_id);
+                })
+                ->where('status', 'completed')
+                ->get();
+
+            if ($matches->isEmpty()) continue;
+
+            $matchIds = $matches->pluck('id');
+
+            // Get tournament-specific stats
+            $goals = DB::table('match_events')
+                ->whereIn('match_id', $matchIds)
+                ->where('player_id', $this->id)
+                ->where('type', 'goal')
+                ->count();
+
+            $assists = DB::table('match_events')
+                ->whereIn('match_id', $matchIds)
+                ->where('player_id', $this->id)
+                ->where('type', 'assist')
+                ->count();
+
+            $cleanSheets = 0;
+            if (in_array($this->position, ['GK', 'DEF'])) {
+                foreach ($matches as $match) {
+                    $opponentTeamId = ($match->home_team_id == $this->team_id) ? $match->away_team_id : $match->home_team_id;
+                    $opponentGoals = DB::table('match_events')
+                        ->where('match_id', $match->id)
+                        ->where('team_id', $opponentTeamId)
+                        ->where('type', 'goal')
+                        ->count();
+                    if ($opponentGoals == 0) {
+                        $cleanSheets++;
+                    }
+                }
+            }
+
+            // Tournament-specific achievements
+            if ($goals >= 10) {
+                $achievements[] = [
+                    'title' => 'Tournament Top Scorer',
+                    'description' => 'Scored ' . $goals . ' goals in ' . $tournament->name,
+                    'icon' => 'fas fa-trophy',
+                    'color' => 'bg-warning',
+                    'year' => $season,
+                    'value' => $goals . ' goals',
+                    'tournament' => $tournament->name
+                ];
+            } elseif ($goals >= 5) {
+                $achievements[] = [
+                    'title' => 'Tournament Striker',
+                    'description' => 'Scored ' . $goals . ' goals in ' . $tournament->name,
+                    'icon' => 'fas fa-futbol',
+                    'color' => 'bg-success',
+                    'year' => $season,
+                    'value' => $goals . ' goals',
+                    'tournament' => $tournament->name
+                ];
+            }
+
+            if ($assists >= 8) {
+                $achievements[] = [
+                    'title' => 'Tournament Playmaker',
+                    'description' => 'Provided ' . $assists . ' assists in ' . $tournament->name,
+                    'icon' => 'fas fa-hands-helping',
+                    'color' => 'bg-info',
+                    'year' => $season,
+                    'value' => $assists . ' assists',
+                    'tournament' => $tournament->name
+                ];
+            }
+
+            if ($cleanSheets >= 5 && in_array($this->position, ['GK', 'DEF'])) {
+                $achievements[] = [
+                    'title' => 'Tournament Defender',
+                    'description' => 'Kept ' . $cleanSheets . ' clean sheets in ' . $tournament->name,
+                    'icon' => 'fas fa-shield-alt',
+                    'color' => 'bg-success',
+                    'year' => $season,
+                    'value' => $cleanSheets . ' clean sheets',
+                    'tournament' => $tournament->name
+                ];
+            }
+
+            // Tournament winner achievement (if team won)
+            $teamStats = $tournament->teams()->where('team_id', $this->team_id)->first();
+            if ($teamStats && $teamStats->pivot->points > 0) {
+                $achievements[] = [
+                    'title' => 'Tournament Participant',
+                    'description' => 'Participated in ' . $tournament->name,
+                    'icon' => 'fas fa-medal',
+                    'color' => 'bg-secondary',
+                    'year' => $season,
+                    'value' => $teamStats->pivot->points . ' points',
+                    'tournament' => $tournament->name
+                ];
+            }
+        }
+
+        return $achievements;
+    }
+
+    /**
+     * Get all achievements (seasonal + tournament)
+     */
+    public function getAllAchievementsAttribute(): array
+    {
+        $seasonalAchievements = $this->achievements;
+        $tournamentAchievements = $this->tournament_achievements;
+
+        // Merge and sort all achievements
+        $allAchievements = array_merge($seasonalAchievements, $tournamentAchievements);
+
+        // Sort by year (current year first, then by importance)
+        usort($allAchievements, function($a, $b) {
+            // Current year achievements first
+            if ($a['year'] === date('Y') && $b['year'] !== date('Y')) return -1;
+            if ($b['year'] === date('Y') && $a['year'] !== date('Y')) return 1;
+
+            // Then by year (newer first)
+            if ($a['year'] !== $b['year']) {
+                return $b['year'] <=> $a['year'];
+            }
+
+            // Then by tournament achievements (more specific)
+            if (isset($a['tournament']) && !isset($b['tournament'])) return -1;
+            if (!isset($a['tournament']) && isset($b['tournament'])) return 1;
+
+            return 0;
+        });
+
+        return $allAchievements;
+    }
+
+    /**
+     * Get matches count for current season
+     */
+    private function getMatchesCount(): int
+    {
+        if (!$this->team) return 0;
+
+        // Get matches from current season (simplified calculation)
+        $currentYear = date('Y');
+        $startOfYear = $currentYear . '-01-01';
+        $endOfYear = $currentYear . '-12-31';
+
+        $matches = MatchModel::where(function($query) {
+            $query->where('home_team_id', $this->team_id)
+                  ->orWhere('away_team_id', $this->team_id);
+        })
+        ->whereBetween('scheduled_at', [$startOfYear, $endOfYear])
+        ->where('status', 'completed')
+        ->count();
+
+        return $matches;
+    }
 }

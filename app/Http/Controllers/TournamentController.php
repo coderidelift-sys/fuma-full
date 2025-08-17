@@ -6,6 +6,7 @@ use App\Models\MatchModel;
 use App\Models\Team;
 use App\Models\Tournament;
 use App\Models\User;
+use App\Models\Venue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -115,6 +116,7 @@ class TournamentController extends Controller
         $standings = $this->getStandings($tournament);
         $statistics = $this->getTournamentStatistics($tournament);
         $organizers = User::whereHas('roles', fn($query) => $query->where('name', 'organizer'))->get();
+        $venues = Venue::active()->get(['id', 'name', 'address', 'city', 'country']);
 
         return view('fuma.tournament_detail', array_merge($tournamentData, [
             'tournament' => $tournament,
@@ -122,6 +124,7 @@ class TournamentController extends Controller
             'standings' => $standings,
             'statistics' => $statistics,
             'organizers' => $organizers,
+            'venues' => $venues,
         ]));
     }
 

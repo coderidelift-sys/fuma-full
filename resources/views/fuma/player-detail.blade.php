@@ -262,7 +262,7 @@
                         <a class="nav-link" href="{{ route('teams.index') }}">Teams</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="matches.html">Matches</a>
+                        <a class="nav-link" href="{{ route('matches.index') }}">Matches</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link active" href="{{ route('players.index') }}">Players</a>
@@ -561,7 +561,8 @@
                                         @php
                                             $color = $colors[$loop->index % count($colors)]; // loop warna secara berulang
                                         @endphp
-                                        <span class="skill-badge {{ $color }} text-white">{{ $trait }}</span>
+                                        <span
+                                            class="skill-badge {{ $color }} text-white">{{ $trait }}</span>
                                     @empty
                                         <span class="skill-badge bg-secondary">No special traits yet</span>
                                     @endforelse
@@ -627,29 +628,29 @@
                                                 <td>All Competitions</td>
                                                 <td>{{ $matches_count ?? 0 }}</td>
                                                 <td>
-                                                    @if(isset($recent_matches) && $recent_matches->count() > 0)
-                                                        {{ $recent_matches->sum(function($match) { return $match->player_performance['goals'] ?? 0; }) }}
+                                                    @if (isset($recent_matches) && $recent_matches->count() > 0)
+                                                        {{ $recent_matches->sum(function ($match) {return $match->player_performance['goals'] ?? 0;}) }}
                                                     @else
                                                         {{ $player->goals_scored ?? 0 }}
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    @if(isset($recent_matches) && $recent_matches->count() > 0)
-                                                        {{ $recent_matches->sum(function($match) { return $match->player_performance['assists'] ?? 0; }) }}
+                                                    @if (isset($recent_matches) && $recent_matches->count() > 0)
+                                                        {{ $recent_matches->sum(function ($match) {return $match->player_performance['assists'] ?? 0;}) }}
                                                     @else
                                                         {{ $player->assists ?? 0 }}
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    @if(isset($recent_matches) && $recent_matches->count() > 0)
-                                                        {{ $recent_matches->sum(function($match) { return $match->player_performance['yellow_cards'] ?? 0; }) }}
+                                                    @if (isset($recent_matches) && $recent_matches->count() > 0)
+                                                        {{ $recent_matches->sum(function ($match) {return $match->player_performance['yellow_cards'] ?? 0;}) }}
                                                     @else
                                                         {{ $player->yellow_cards ?? 0 }}
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    @if(isset($recent_matches) && $recent_matches->count() > 0)
-                                                        {{ $recent_matches->count() > 0 ? $recent_matches->sum(function($match) { return $match->player_performance['red_cards'] ?? 0; }) : 0 }}
+                                                    @if (isset($recent_matches) && $recent_matches->count() > 0)
+                                                        {{ $recent_matches->count() > 0? $recent_matches->sum(function ($match) {return $match->player_performance['red_cards'] ?? 0;}): 0 }}
                                                     @else
                                                         {{ $player->red_cards ?? 0 }}
                                                     @endif
@@ -797,26 +798,31 @@
                                                 </div>
                                                 <div class="d-flex align-items-center mt-2">
                                                     <span class="badge bg-success me-3">Played</span>
-                                                    @if(isset($match->player_performance))
+                                                    @if (isset($match->player_performance))
                                                         <span class="me-3">
-                                                            <strong>{{ $match->player_performance['goals'] }}</strong> goal(s)
+                                                            <strong>{{ $match->player_performance['goals'] }}</strong>
+                                                            goal(s)
                                                         </span>
                                                         <span class="me-3">
-                                                            <strong>{{ $match->player_performance['assists'] }}</strong> assist(s)
+                                                            <strong>{{ $match->player_performance['assists'] }}</strong>
+                                                            assist(s)
                                                         </span>
-                                                        @if($match->player_performance['clean_sheets'] > 0)
+                                                        @if ($match->player_performance['clean_sheets'] > 0)
                                                             <span class="me-2">
-                                                                <strong>{{ $match->player_performance['clean_sheets'] }}</strong> clean sheet(s)
+                                                                <strong>{{ $match->player_performance['clean_sheets'] }}</strong>
+                                                                clean sheet(s)
                                                             </span>
                                                         @endif
-                                                        @if($match->player_performance['yellow_cards'] > 0)
+                                                        @if ($match->player_performance['yellow_cards'] > 0)
                                                             <span class="me-2">
-                                                                <i class="fas fa-square text-warning"></i> {{ $match->player_performance['yellow_cards'] }}
+                                                                <i class="fas fa-square text-warning"></i>
+                                                                {{ $match->player_performance['yellow_cards'] }}
                                                             </span>
                                                         @endif
-                                                        @if($match->player_performance['red_cards'] > 0)
+                                                        @if ($match->player_performance['red_cards'] > 0)
                                                             <span class="me-2">
-                                                                <i class="fas fa-square text-danger"></i> {{ $match->player_performance['red_cards'] }}
+                                                                <i class="fas fa-square text-danger"></i>
+                                                                {{ $match->player_performance['red_cards'] }}
                                                             </span>
                                                         @endif
                                                     @else
@@ -856,25 +862,46 @@
                                 </div>
 
                                 <h4 class="mt-5 mb-4">Achievements</h4>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="bg-primary bg-opacity-10 p-3 rounded me-3">
-                                                        <i class="fas fa-trophy text-primary"></i>
+                                @if($player->all_achievements && count($player->all_achievements) > 0)
+                                    <div class="row">
+                                        @foreach($player->all_achievements as $achievement)
+                                            <div class="col-md-6 mb-3">
+                                                <div class="card achievement-card">
+                                                    <div class="card-body">
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="{{ $achievement['color'] }} bg-opacity-10 p-3 rounded me-3">
+                                                                <i class="{{ $achievement['icon'] }} {{ $achievement['color'] }}"></i>
+                                                            </div>
+                                                            <div class="flex-grow-1">
+                                                                <h5 class="mb-1">{{ $achievement['title'] }}</h5>
+                                                                <p class="text-muted mb-1 small">{{ $achievement['description'] }}</p>
+                                                                                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="badge {{ $achievement['color'] }}">{{ $achievement['year'] }}</span>
+                                                    <small class="text-muted">{{ $achievement['value'] }}</small>
+                                                </div>
+                                                @if(isset($achievement['tournament']))
+                                                    <div class="mt-2">
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-trophy me-1"></i>{{ $achievement['tournament'] }}
+                                                        </small>
                                                     </div>
-                                                    <div>
-                                                        <h5 class="mb-0">Top Scorer</h5>
-                                                        <p class="text-muted mb-0">
-                                                            {{ $player->team ? $player->team->name : 'Team' }}
-                                                            {{ date('Y') }}</p>
+                                                @endif
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        @endforeach
                                     </div>
-                                </div>
+                                @else
+                                    <div class="text-center py-4">
+                                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                            <i class="fas fa-trophy text-muted fa-2x"></i>
+                                        </div>
+                                        <h5 class="text-muted">No Achievements Yet</h5>
+                                        <p class="text-muted">Keep playing and improving to unlock achievements!</p>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -936,12 +963,12 @@
                             <div class="col-md-6 mb-3">
                                 <label for="position" class="form-label">Position</label>
                                 <select class="form-select" id="position" name="position" required>
-                                    <option value="GK"
-                                        {{ $player->position === 'GK' ? 'selected' : '' }}>Goalkeeper</option>
+                                    <option value="GK" {{ $player->position === 'GK' ? 'selected' : '' }}>
+                                        Goalkeeper</option>
                                     <option value="DEF" {{ $player->position === 'DEF' ? 'selected' : '' }}>
                                         Defender</option>
-                                    <option value="MID"
-                                        {{ $player->position === 'MID' ? 'selected' : '' }}>Midfielder</option>
+                                    <option value="MID" {{ $player->position === 'MID' ? 'selected' : '' }}>
+                                        Midfielder</option>
                                     <option value="FWD" {{ $player->position === 'FWD' ? 'selected' : '' }}>
                                         Forward</option>
                                 </select>
@@ -975,7 +1002,8 @@
                                     <option value="">Free Agent</option>
                                     @foreach ($teams ?? [] as $team)
                                         <option value="{{ $team->id }}"
-                                            {{ $player->team_id == $team->id ? 'selected' : '' }}>{{ $team->name }}
+                                            {{ $player->team_id == $team->id ? 'selected' : '' }}>
+                                            {{ $team->name }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -1104,6 +1132,45 @@
 
         .chart-loading .spinner-border {
             margin-right: 10px;
+        }
+
+        /* Achievement cards styling */
+        .achievement-card {
+            transition: all 0.3s ease;
+            border: 1px solid #e9ecef;
+        }
+
+        .achievement-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .achievement-card .card-body {
+            padding: 1.25rem;
+        }
+
+        .achievement-card i {
+            font-size: 1.5rem;
+        }
+
+        .achievement-card .badge {
+            font-size: 0.75rem;
+            padding: 0.375rem 0.75rem;
+        }
+
+        .achievement-card h5 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .achievement-card p {
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+
+        .achievement-card small {
+            font-size: 0.8rem;
         }
 
         /* Responsive chart adjustments */

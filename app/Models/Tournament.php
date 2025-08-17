@@ -25,6 +25,7 @@ class Tournament extends Model
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'prize_pool' => 'integer', // Store as string to handle various formats
     ];
 
     protected $appends = [

@@ -8,6 +8,9 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TournamentController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\PlayerController;
+use App\Http\Controllers\MatchController;
+use App\Http\Controllers\MatchEventController;
+use App\Http\Controllers\MatchLineupController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -82,4 +85,39 @@ Route::prefix('players')->name('players.')->group(function () {
     Route::get('/{player}', [PlayerController::class, 'show'])->name('show');
     Route::put('/{player}', [PlayerController::class, 'update'])->name('update');
     Route::delete('/{player}', [PlayerController::class, 'destroy'])->name('delete');
+});
+
+// Matches routes
+Route::get('/matches', [MatchController::class, 'index'])->name('matches.index');
+Route::get('/matches-data', [MatchController::class, 'data'])->name('matches.data');
+Route::prefix('matches')->name('matches.')->group(function () {
+    Route::post('/', [MatchController::class, 'store'])->name('store');
+    Route::get('/{match}', [MatchController::class, 'show'])->name('show');
+    Route::put('/{match}', [MatchController::class, 'update'])->name('update');
+    Route::delete('/{match}', [MatchController::class, 'destroy'])->name('delete');
+
+    // Match Management Routes
+    Route::post('/{match}/start', [MatchController::class, 'startMatch'])->name('start');
+    Route::post('/{match}/pause', [MatchController::class, 'pauseMatch'])->name('pause');
+    Route::post('/{match}/resume', [MatchController::class, 'resumeMatch'])->name('resume');
+    Route::post('/{match}/complete', [MatchController::class, 'completeMatch'])->name('complete');
+    Route::put('/{match}/score', [MatchController::class, 'updateScore'])->name('update-score');
+    Route::put('/{match}/minute', [MatchController::class, 'updateMinute'])->name('update-minute');
+    Route::get('/{match}/management-data', [MatchController::class, 'getMatchManagementData'])->name('management-data');
+});
+
+// Match Lineup Management Routes
+Route::prefix('match-lineups')->name('match-lineups.')->group(function () {
+    Route::get('/{match}', [MatchLineupController::class, 'getLineup'])->name('get');
+    Route::post('/{match}', [MatchLineupController::class, 'setLineup'])->name('set');
+    Route::post('/{match}/update-line-up', [MatchLineupController::class, 'updateLineup'])->name('update');
+    Route::get('/{match}/available-players/{team}', [MatchLineupController::class, 'getAvailablePlayers'])->name('available-players');
+});
+
+// Match Events routes
+Route::prefix('match-events')->name('match-events.')->group(function () {
+    Route::post('/', [MatchEventController::class, 'store'])->name('store');
+    Route::put('/{event}', [MatchEventController::class, 'update'])->name('update');
+    Route::delete('/{event}', [MatchEventController::class, 'destroy'])->name('delete');
+    Route::get('/match/{match}', [MatchEventController::class, 'getMatchEvents'])->name('match-events');
 });

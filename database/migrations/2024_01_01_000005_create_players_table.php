@@ -30,6 +30,7 @@ return new class extends Migration
 
         Schema::table('players', function (Blueprint $table) {
             $table->text('bio')->nullable()->after('red_cards');
+            $table->boolean('is_captain')->default(false)->after('bio');
         });
     }
 

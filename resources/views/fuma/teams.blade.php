@@ -110,7 +110,7 @@
                         <a class="nav-link active" href="{{ route('teams.index') }}">Teams</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="matches.html">Matches</a>
+                        <a class="nav-link" href="{{ route('matches.index') }}">Matches</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('players.index') }}">Players</a>
@@ -176,11 +176,11 @@
                         <label for="countryFilter" class="form-label">Country</label>
                         <select id="countryFilter" class="form-select">
                             <option value="">All Countries</option>
-                            <option value="england">England</option>
-                            <option value="spain">Spain</option>
-                            <option value="germany">Germany</option>
-                            <option value="france">France</option>
-                            <option value="italy">Italy</option>
+                            <option value="indonesia">Indonesia</option>
+                            <option value="malaysia">Malaysia</option>
+                            <option value="singapore">Singapore</option>
+                            <option value="thailand">Thailand</option>
+                            <option value="vietnam">Vietnam</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -239,37 +239,37 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="teamName" class="form-label">Team Name</label>
+                        <div class="mb-3">
+                            <label for="teamName" class="form-label">Team Name</label>
                         <input type="text" class="form-control" id="teamName" name="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="shortName" class="form-label">Short Name</label>
+                        </div>
+                        <div class="mb-3">
+                            <label for="shortName" class="form-label">Short Name</label>
                         <input type="text" class="form-control" id="shortName" name="short_name" maxlength="3" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="teamLogo" class="form-label">Logo</label>
+                        </div>
+                        <div class="mb-3">
+                            <label for="teamLogo" class="form-label">Logo</label>
                         <input class="form-control" type="file" id="teamLogo" name="logo" accept="image/*">
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="foundedYear" class="form-label">Founded Year</label>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="foundedYear" class="form-label">Founded Year</label>
                             <input type="number" class="form-control" id="foundedYear" name="founded_year" min="1800" max="2023">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="country" class="form-label">Country</label>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="country" class="form-label">Country</label>
                             <select class="form-select" id="country" name="country" required>
-                                <option value="">Select country</option>
-                                <option value="england">England</option>
-                                <option value="spain">Spain</option>
-                                <option value="germany">Germany</option>
-                                <option value="france">France</option>
-                                <option value="italy">Italy</option>
-                            </select>
+                                    <option value="">Select country</option>
+                                    <option value="indonesia">Indonesia</option>
+                                    <option value="malaysia">Malaysia</option>
+                                    <option value="singapore">Singapore</option>
+                                    <option value="thailand">Thailand</option>
+                                    <option value="vietnam">Vietnam</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="city" class="form-label">City</label>
+                        <div class="mb-3">
+                            <label for="city" class="form-label">City</label>
                         <input type="text" class="form-control" id="city" name="city" required>
                     </div>
                                             <div class="mb-3">
@@ -339,15 +339,15 @@
         });
 
         function loadTeams(page = 1) {
-            const searchTerm = document.getElementById('searchTeam').value;
-            const countryFilter = document.getElementById('countryFilter').value;
-            const establishedFilter = document.getElementById('establishedFilter').value;
+                const searchTerm = document.getElementById('searchTeam').value;
+                const countryFilter = document.getElementById('countryFilter').value;
+                const establishedFilter = document.getElementById('establishedFilter').value;
 
             const params = new URLSearchParams({
                 page: page,
-                search: searchTerm,
-                country: countryFilter,
-                established: establishedFilter
+                    search: searchTerm,
+                    country: countryFilter,
+                    established: establishedFilter
             }).toString();
 
             fetch(`/teams-data?${params}`)

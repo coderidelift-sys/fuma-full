@@ -13,8 +13,8 @@ return new class extends Migration
             $table->foreignId('tournament_id')->constrained()->onDelete('cascade');
             $table->foreignId('home_team_id')->constrained('teams')->onDelete('cascade');
             $table->foreignId('away_team_id')->constrained('teams')->onDelete('cascade');
-            $table->enum('stage', ['group', 'round_of_16', 'quarter_final', 'semi_final', 'final'])->default('group');
-            $table->enum('status', ['scheduled', 'live', 'completed', 'cancelled'])->default('scheduled');
+            $table->enum('stage', ['group', 'round_of_32', 'round_of_16', 'quarter_final', 'semi_final', 'final', 'league'])->default('group');
+            $table->enum('status', ['scheduled', 'live', 'completed', 'cancelled', 'paused'])->default('scheduled');
             $table->dateTime('scheduled_at');
             $table->string('venue')->nullable();
             $table->integer('home_score')->nullable();

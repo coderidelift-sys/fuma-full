@@ -570,7 +570,7 @@
                             alt="Stadium" class="stadium-img">
                         <div class="stadium-overlay">
                             <h4>Community Ground</h4>
-                            <p class="mb-1"><i class="fas fa-map-marker-alt me-1"></i> Berlin, Germany</p>
+                            <p class="mb-1"><i class="fas fa-map-marker-alt me-1"></i> Jakarta, Indonesia</p>
                             <p class="mb-0"><i class="fas fa-people-arrows me-1"></i> Capacity: 15,000</p>
                         </div>
                     </div>

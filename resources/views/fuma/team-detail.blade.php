@@ -138,7 +138,7 @@
                         <a class="nav-link active" href="{{ route('teams.index') }}">Teams</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="matches.html">Matches</a>
+                        <a class="nav-link" href="{{ route('matches.index') }}">Matches</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('players.index') }}">Players</a>
@@ -471,7 +471,7 @@
                                                 <i class="fas fa-map-marker-alt me-1"></i>
                                                 {{ $nextMatch->venue ?? 'TBD' }}
                                             </div>
-                                            <a href="#" class="btn btn-sm btn-primary mt-3">View Details</a>
+                                            <a href="{{ route('matches.show', $nextMatch->id) }}" class="btn btn-sm btn-primary mt-3">View Details</a>
                                         @else
                                             <p class="text-muted">No upcoming matches scheduled</p>
                                         @endif
@@ -532,14 +532,10 @@
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    <button class="btn btn-sm btn-outline-primary"
-                                                        onclick="viewPlayer({{ $player->id }})">
+                                                    <a class="btn btn-sm btn-outline-primary"
+                                                        href="{{ route('players.show', $player->id) }}">
                                                         <i class="fas fa-eye"></i>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-outline-secondary"
-                                                        onclick="editPlayer({{ $player->id }})">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
+                                                    </a>
                                                 </td>
                                             </tr>
                                         @empty

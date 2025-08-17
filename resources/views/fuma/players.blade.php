@@ -13,15 +13,15 @@
     <!-- Toastr CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
     <!-- Custom CSS -->
-    <style>
+       <style>
         :root {
             --primary-color: #2563eb;
             --secondary-color: #1e40af;
             --accent-color: #e74c3c;
             --light-color: #f8fafc;
             --dark-color: #1e293b;
-            --blue-gradient: linear-gradient(135deg, #1e40af, #2563eb);
-        }
+    --blue-gradient: linear-gradient(135deg, #1e40af, #2563eb);
+}
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -145,7 +145,7 @@
                         <a class="nav-link" href="{{ route('teams.index') }}">Teams</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="matches.html">Matches</a>
+                        <a class="nav-link" href="{{ route('matches.index') }}">Matches</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link active" href="{{ route('players.index') }}">Players</a>
@@ -238,10 +238,10 @@
                         <select id="nationalityFilter" class="form-select">
                             <option value="">All Nationalities</option>
                             <option value="Indonesia">Indonesia</option>
-                            <option value="England">England</option>
-                            <option value="Spain">Spain</option>
-                            <option value="Germany">Germany</option>
-                            <option value="France">France</option>
+                            <option value="Malaysia">Malaysia</option>
+                            <option value="Singapore">Singapore</option>
+                            <option value="Thailand">Thailand</option>
+                            <option value="Vietnam">Vietnam</option>
                         </select>
                     </div>
                     <div class="col-md-3 d-flex align-items-end">
@@ -466,17 +466,17 @@
         });
 
         function loadPlayers(page = 1) {
-            const searchTerm = document.getElementById('searchPlayer').value;
-            const positionFilter = document.getElementById('positionFilter').value;
-            const teamFilter = document.getElementById('teamFilter').value;
-            const nationalityFilter = document.getElementById('nationalityFilter').value;
+                const searchTerm = document.getElementById('searchPlayer').value;
+                const positionFilter = document.getElementById('positionFilter').value;
+                const teamFilter = document.getElementById('teamFilter').value;
+                const nationalityFilter = document.getElementById('nationalityFilter').value;
 
             const paramsObj = {
                 page,
-                search: searchTerm,
-                position: positionFilter,
-                team: teamFilter,
-                nationality: nationalityFilter
+                    search: searchTerm,
+                    position: positionFilter,
+                    team: teamFilter,
+                    nationality: nationalityFilter
             };
 
             const params = Object.entries(paramsObj)
@@ -599,7 +599,6 @@
                 </li>
             `;
         }
-
 
         function getPositionBadgeClass(position) {
             const positionMap = {

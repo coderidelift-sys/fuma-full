@@ -488,7 +488,7 @@
             <div class="row g-3" id="top-teams-container"></div>
 
             <div class="text-center mt-4"> <!-- Reduced top margin -->
-                <a href="teams.html" class="btn btn-primary px-4">
+                <a href="{{ route('teams.index') }}" class="btn btn-primary px-4">
                     <i class="fas fa-users me-2"></i> View All Teams
                 </a>
             </div>

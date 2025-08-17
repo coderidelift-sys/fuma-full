@@ -11,8 +11,10 @@ class Team extends Model
 
     protected $fillable = [
         'name',
+        'short_name',
         'description',
         'logo',
+        'founded_year',
         'city',
         'country',
         'manager_name',
@@ -20,15 +22,25 @@ class Team extends Model
         'manager_email',
         'rating',
         'trophies_count',
-        'manager_id'
+        'manager_id',
+        'nickname',
+        'stadium',
+        'capacity',
+        'primary_color',
+        'secondary_color',
+        'website',
+        'status'
     ];
 
     protected $casts = [
         'rating' => 'decimal:2',
+        'founded_year' => 'integer',
     ];
 
     protected $appends = [
         'players_count',
+        'tournaments_count',
+        'all_matches',
     ];
 
     public function manager()
@@ -44,8 +56,8 @@ class Team extends Model
     public function tournaments()
     {
         return $this->belongsToMany(Tournament::class, 'tournament_teams')
-                    ->withPivot(['status', 'points', 'goals_for', 'goals_against', 'goal_difference', 'matches_played', 'wins', 'draws', 'losses'])
-                    ->withTimestamps();
+            ->withPivot(['status', 'points', 'goals_for', 'goals_against', 'goal_difference', 'matches_played', 'wins', 'draws', 'losses'])
+            ->withTimestamps();
     }
 
     public function homeMatches()
@@ -56,6 +68,14 @@ class Team extends Model
     public function awayMatches()
     {
         return $this->hasMany(MatchModel::class, 'away_team_id');
+    }
+
+    /**
+     * Get all matches for the team (both home and away)
+     */
+    public function matches()
+    {
+        return $this->homeMatches->merge($this->awayMatches);
     }
 
     public function getAllMatchesAttribute()
@@ -76,5 +96,10 @@ class Team extends Model
     public function getPlayersCountAttribute()
     {
         return $this->players()->count();
+    }
+
+    public function getTournamentsCountAttribute()
+    {
+        return $this->tournaments()->count();
     }
 }

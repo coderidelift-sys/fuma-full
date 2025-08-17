@@ -169,7 +169,7 @@
                         <a class="nav-link active" href="{{ route('tournaments.index') }}">Tournaments</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="teams.html">Teams</a>
+                        <a class="nav-link" href="{{ route('teams.index') }}">Teams</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="matches.html">Matches</a>
@@ -205,7 +205,8 @@
                         </span>
                         <span class="text-white opacity-75">
                             <i class="fas fa-calendar-alt me-1"></i>
-                            {{ $tournament->start_date->format('M d') }} - {{ $tournament->end_date->format('M d, Y') }}
+                            {{ $tournament->start_date->format('M d') }} -
+                            {{ $tournament->end_date->format('M d, Y') }}
                         </span>
                         <span class="text-white opacity-75">
                             <i class="fas fa-users me-1"></i> {{ $tournament->max_teams }} Teams
@@ -254,8 +255,9 @@
                             </li>
 
                             <li>
-                                <form id="deleteTournamentForm" action="{{ route('tournaments.delete', $tournament->id) }}"
-                                    method="POST" style="display: none;">
+                                <form id="deleteTournamentForm"
+                                    action="{{ route('tournaments.delete', $tournament->id) }}" method="POST"
+                                    style="display: none;">
                                     @csrf
                                     @method('DELETE')
                                 </form>
@@ -616,7 +618,8 @@
                                             <td>{{ $team['name'] }}</td>
                                             <td>{{ $team['city'] ?? 'Unknown' }}</td>
                                             <td>
-                                                <a href="#" class="btn btn-sm btn-outline-primary">
+                                                <a href="{{ route('teams.show', $team['id']) }}"
+                                                    class="btn btn-sm btn-outline-primary">
                                                     View Team
                                                 </a>
                                                 {{-- <a href="{{ route('team.detail', ['id' => $team['id']]) }}"
@@ -893,8 +896,11 @@
                                     <td>{{ \Carbon\Carbon::parse($match->scheduled_at)->format('d M, Y | H:i') }}</td>
                                     <td>
                                         {{-- Edit button --}}
-                                        <button type="button" class="btn btn-sm btn-warning me-1"
-                                            onclick="editMatch({{ $match->id }}, {{ $match->home_team_id }}, {{ $match->away_team_id }}, '{{ $match->scheduled_at }}', '{{ $match->venue }}', '{{ $match->note }}')">
+                                        <button type="button" class="btn btn-sm btn-warning me-1 edit-match-btn"
+                                            data-id="{{ $match->id }}" data-home="{{ $match->home_team_id }}"
+                                            data-away="{{ $match->away_team_id }}"
+                                            data-date="{{ $match->scheduled_at }}"
+                                            data-venue="{{ $match->venue }}" data-note="{{ $match->note }}">
                                             <i class="fas fa-edit"></i>
                                         </button>
 
@@ -1065,6 +1071,22 @@
                     form.appendChild(methodInput);
                 }
             };
+
+            // event delegation example
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.edit-match-btn')) {
+                    const btn = e.target.closest('.edit-match-btn');
+                    const id = btn.dataset.id;
+                    const home = btn.dataset.home;
+                    const away = btn.dataset.away;
+                    const date = btn.dataset.date;
+                    const venue = btn.dataset.venue;
+                    const note = btn.dataset.note;
+
+                    editMatch(id, home, away, date, venue, note);
+                }
+            });
+
 
             form?.addEventListener('submit', e => {
                 let valid = true;

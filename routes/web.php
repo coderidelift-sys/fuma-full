@@ -6,6 +6,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Fuma\HomeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TournamentController;
+use App\Http\Controllers\TeamController;
+use App\Http\Controllers\PlayerController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -59,3 +61,17 @@ Route::prefix('tournaments')->name('tournaments.')->group(function () {
     Route::put('/{tournament}/updateMatch/{match}', [TournamentController::class, 'updateScheduleMatch'])->name('updateScheduleMatch');
     Route::delete('/{tournament}/matches/{match}', [TournamentController::class, 'deleteScheduleMatch'])->name('deleteScheduleMatch');
 });
+
+// Teams Routes
+Route::get('/teams', [TeamController::class, 'index'])->name('teams.index');
+Route::get('/teams-data', [TeamController::class, 'teamsData'])->name('teams.data');
+
+Route::prefix('teams')->name('teams.')->group(function () {
+    Route::post('/', [TeamController::class, 'store'])->name('store');
+    Route::get('/{team}', [TeamController::class, 'show'])->name('show');
+    Route::put('/{team}', [TeamController::class, 'update'])->name('update');
+    Route::delete('/{team}', [TeamController::class, 'destroy'])->name('delete');
+});
+
+// Players Routes (for Add Player functionality)
+Route::post('/players', [PlayerController::class, 'store'])->name('players.store');

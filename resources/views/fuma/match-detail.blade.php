@@ -547,17 +547,17 @@
                             <div class="card mb-4">
                                 <div class="card-body">
                                     <h5 class="card-title fw-bold mb-3">Match Events</h5>
-                                
+
                                     <!-- First Half Header -->
                                     <div class="d-flex align-items-center mb-3">
                                         <div class="flex-grow-1">
                                             <h6 class="mb-0 text-uppercase text-muted">First Half</h6>
                                         </div>
                                         <div class="badge bg-light text-dark">
-                                            {{ $match->events->where('minute', '<=', 45)->count() ? $match->events->where('minute', '<=', 45)->count() : '0' }}
+                                            {{ $match->events->where('minute', '<=', 45)->where('type', 'goal')->where('team_id', $match->home_team_id)->count() }}-{{ $match->events->where('minute', '<=', 45)->where('type', 'goal')->where('team_id', $match->away_team_id)->count() }}
                                         </div>
                                     </div>
-                                
+
                                     <!-- First Half Events -->
                                     @forelse($match->events->where('minute', '<=', 45) as $event)
                                         <div class="timeline-item">
@@ -589,17 +589,17 @@
                                             No events recorded in first half
                                         </div>
                                     @endforelse
-                                
+
                                     <!-- Second Half Header -->
                                     <div class="d-flex align-items-center mb-3 mt-4">
                                         <div class="flex-grow-1">
                                             <h6 class="mb-0 text-uppercase text-muted">Second Half</h6>
                                         </div>
                                         <div class="badge bg-light text-dark">
-                                            {{ $match->events->where('minute', '>', 45)->count() ? $match->events->where('minute', '>', 45)->count() : '0' }}
+                                            {{ $match->events->where('minute', '>', 45)->where('type', 'goal')->where('team_id', $match->home_team_id)->count() }}-{{ $match->events->where('minute', '>', 45)->where('type', 'goal')->where('team_id', $match->away_team_id)->count() }}
                                         </div>
                                     </div>
-                                
+
                                     <!-- Second Half Events -->
                                     @forelse($match->events->where('minute', '>', 45) as $event)
                                         <div class="timeline-item">
@@ -632,7 +632,7 @@
                                         </div>
                                     @endforelse
                                 </div>
-                                
+
                             </div>
                         </div>
 
@@ -1219,26 +1219,55 @@
                 <!-- Commentary Tab -->
                 <div class="tab-pane fade" id="commentary" role="tabpanel">
                     <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title fw-bold mb-0">Live Commentary</h5>
+                            @if(auth()->check() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('referee') || auth()->user()->hasRole('commentator') || auth()->user()->hasRole('organizer')))
+                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCommentaryModal">
+                                    <i class="fas fa-plus me-2"></i>Add Commentary
+                                </button>
+                            @endif
+                        </div>
                         <div class="card-body">
-                            <h5 class="card-title fw-bold mb-3">Live Commentary</h5>
-
-                            <!-- Commentary will be dynamically loaded from database -->
                             @if ($match->commentary && $match->commentary->count() > 0)
-                                @foreach ($match->commentary as $comment)
-                                    <div class="timeline-item">
-                                        <div class="timeline-dot"></div>
+                                @foreach ($match->commentary->sortBy('minute') as $comment)
+                                    <div class="timeline-item {{ $comment->is_important ? 'border-start border-warning border-3' : '' }}">
+                                        <div class="timeline-dot {{ $comment->is_important ? 'bg-warning' : '' }}"></div>
                                         <div class="d-flex justify-content-between">
-                                            <div>
-                                                <strong>{{ $comment->minute }}'</strong> -
-                                                {{ $comment->description }}
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <span class="badge bg-{{ $comment->commentary_type === 'general' ? 'secondary' : ($comment->commentary_type === 'tactical' ? 'info' : ($comment->commentary_type === 'incident' ? 'warning' : ($comment->commentary_type === 'highlight' ? 'success' : 'danger'))) }} me-2">
+                                                        <i class="{{ $comment->commentary_icon }} me-1"></i>
+                                                        {{ $comment->commentary_type_label }}
+                                                    </span>
+                                                    @if($comment->is_important)
+                                                        <span class="badge bg-warning text-dark me-2">
+                                                            <i class="fas fa-star me-1"></i>Important
+                                                        </span>
+                                                    @endif
+                                                    <small class="text-muted">{{ $comment->user_role_label }}</small>
+                                                </div>
+                                                <div class="commentary-content">
+                                                    <strong>{{ $comment->formatted_minute }}</strong> - {{ $comment->description }}
+                                                </div>
+                                                <small class="text-muted">
+                                                    By {{ $comment->user->name ?? 'Unknown' }} • {{ $comment->created_at->diffForHumans() }}
+                                                </small>
+                                            </div>
+                                            <div class="ms-3">
+                                                @if(auth()->check() && (auth()->user()->id === $comment->user_id || auth()->user()->hasRole('admin')))
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteCommentary({{ $comment->id }})">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
                                 @endforeach
                             @else
-                                <div class="text-center text-muted py-3">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    No commentary available yet
+                                <div class="text-center text-muted py-5">
+                                    <i class="fas fa-comment-slash fa-3x mb-3"></i>
+                                    <h6>No commentary available yet</h6>
+                                    <p class="mb-0">Be the first to add commentary for this match!</p>
                                 </div>
                             @endif
                         </div>
@@ -2942,7 +2971,133 @@
             // Reset form
             document.getElementById('substitutionForm').reset();
         }
+
+        // Commentary Management Functions
+        function addCommentary() {
+            const minute = document.getElementById('commentaryMinute').value;
+            const type = document.getElementById('commentaryType').value;
+            const description = document.getElementById('commentaryDescription').value;
+            const isImportant = document.getElementById('commentaryImportant').checked;
+
+            if (!minute || !type || !description) {
+                showToastr('error', 'Please fill in all required fields');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('minute', minute);
+            formData.append('commentary_type', type);
+            formData.append('description', description);
+            formData.append('is_important', isImportant);
+
+            fetch('/matches/{{ $match->id }}/commentary', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToastr('success', 'Commentary added successfully!');
+                    document.getElementById('addCommentaryForm').reset();
+                    // Reload commentary
+                    location.reload();
+                } else {
+                    showToastr('error', data.message || 'Error adding commentary');
+                }
+            })
+            .catch(error => {
+                console.error('Error adding commentary:', error);
+                showToastr('error', 'Network error: ' + error.message);
+            });
+        }
+
+        function deleteCommentary(commentaryId) {
+            if (confirm('Are you sure you want to delete this commentary?')) {
+                fetch(`/matches/{{ $match->id }}/commentary/${commentaryId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToastr('success', 'Commentary deleted successfully!');
+                        location.reload();
+                    } else {
+                        showToastr('error', data.message || 'Error deleting commentary');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting commentary:', error);
+                    showToastr('error', 'Network error: ' + error.message);
+                });
+            }
+        }
     </script>
+
+    <!-- Add Commentary Modal -->
+    <div class="modal fade" id="addCommentaryModal" tabindex="-1" aria-labelledby="addCommentaryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addCommentaryModalLabel">
+                        <i class="fas fa-comment-plus me-2"></i>Add Live Commentary
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addCommentaryForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="commentaryMinute" class="form-label">Match Minute *</label>
+                                    <input type="number" class="form-control" id="commentaryMinute" name="minute" min="0" max="120" required>
+                                    <div class="form-text">Enter the minute when this event occurred</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="commentaryType" class="form-label">Commentary Type *</label>
+                                    <select class="form-select" id="commentaryType" name="commentary_type" required>
+                                        <option value="">Select type</option>
+                                        <option value="general">General</option>
+                                        <option value="tactical">Tactical Analysis</option>
+                                        <option value="incident">Incident</option>
+                                        <option value="highlight">Highlight</option>
+                                        <option value="warning">Warning</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="commentaryDescription" class="form-label">Description *</label>
+                            <textarea class="form-control" id="commentaryDescription" name="description" rows="4" maxlength="1000" required placeholder="Describe what happened at this moment..."></textarea>
+                            <div class="form-text">Maximum 1000 characters</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="commentaryImportant" name="is_important">
+                                <label class="form-check-label" for="commentaryImportant">
+                                    Mark as Important
+                                </label>
+                                <div class="form-text">Important commentary will be highlighted</div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addCommentary()">
+                        <i class="fas fa-plus me-2"></i>Add Commentary
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

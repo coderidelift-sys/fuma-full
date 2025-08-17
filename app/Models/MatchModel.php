@@ -77,6 +77,11 @@ class MatchModel extends Model
         return $this->hasMany(MatchLineup::class, 'match_id');
     }
 
+    public function commentary()
+    {
+        return $this->hasMany(MatchCommentary::class, 'match_id');
+    }
+
     public function venue()
     {
         return $this->belongsTo(Venue::class);

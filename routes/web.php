@@ -10,6 +10,7 @@ use App\Http\Controllers\TeamController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\MatchController;
 use App\Http\Controllers\MatchEventController;
+use App\Http\Controllers\MatchCommentaryController;
 use App\Http\Controllers\MatchLineupController;
 use Illuminate\Support\Facades\Route;
 
@@ -120,4 +121,15 @@ Route::prefix('match-events')->name('match-events.')->group(function () {
     Route::put('/{event}', [MatchEventController::class, 'update'])->name('update');
     Route::delete('/{event}', [MatchEventController::class, 'destroy'])->name('delete');
     Route::get('/match/{match}', [MatchEventController::class, 'getMatchEvents'])->name('match-events');
+});
+
+// Match Commentary Routes
+Route::prefix('matches/{match}/commentary')->group(function () {
+    Route::get('/', [MatchCommentaryController::class, 'getMatchCommentary'])->name('match.commentary.index');
+    Route::post('/', [MatchCommentaryController::class, 'store'])->name('match.commentary.store');
+    Route::put('/{commentary}', [MatchCommentaryController::class, 'update'])->name('match.commentary.update');
+    Route::delete('/{commentary}', [MatchCommentaryController::class, 'destroy'])->name('match.commentary.destroy');
+    Route::get('/type/{type}', [MatchCommentaryController::class, 'getByType'])->name('match.commentary.by-type');
+    Route::get('/important', [MatchCommentaryController::class, 'getImportant'])->name('match.commentary.important');
+    Route::get('/range', [MatchCommentaryController::class, 'getByMinuteRange'])->name('match.commentary.by-range');
 });

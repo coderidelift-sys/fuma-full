@@ -113,7 +113,7 @@
                         <a class="nav-link" href="matches.html">Matches</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="players.html">Players</a>
+                        <a class="nav-link" href="{{ route('players.index') }}">Players</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#login" data-bs-toggle="modal" data-bs-target="#loginModal">

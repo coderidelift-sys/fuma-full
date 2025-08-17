@@ -27,6 +27,10 @@ return new class extends Migration
             $table->foreignId('team_id')->nullable()->constrained()->onDelete('set null');
             $table->timestamps();
         });
+
+        Schema::table('players', function (Blueprint $table) {
+            $table->text('bio')->nullable()->after('red_cards');
+        });
     }
 
     public function down()

@@ -74,4 +74,12 @@ Route::prefix('teams')->name('teams.')->group(function () {
 });
 
 // Players Routes (for Add Player functionality)
-Route::post('/players', [PlayerController::class, 'store'])->name('players.store');
+// Players routes
+Route::get('/players', [PlayerController::class, 'index'])->name('players.index');
+Route::get('/players-data', [PlayerController::class, 'playersData'])->name('players.data');
+Route::prefix('players')->name('players.')->group(function () {
+    Route::post('/', [PlayerController::class, 'store'])->name('store');
+    Route::get('/{player}', [PlayerController::class, 'show'])->name('show');
+    Route::put('/{player}', [PlayerController::class, 'update'])->name('update');
+    Route::delete('/{player}', [PlayerController::class, 'destroy'])->name('delete');
+});

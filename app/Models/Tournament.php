@@ -56,10 +56,12 @@ class Tournament extends Model
 
     public function getStandingsAttribute()
     {
-        return $this->teams()->orderBy('pivot_points', 'desc')
-            ->orderBy('pivot_goal_difference', 'desc')
-            ->orderBy('pivot_goals_for', 'desc')
-            ->get();
+        return cache()->remember("tournament_standings_{$this->id}", 300, function () {
+            return $this->teams()->orderBy('pivot_points', 'desc')
+                ->orderBy('pivot_goal_difference', 'desc')
+                ->orderBy('pivot_goals_for', 'desc')
+                ->get();
+        });
     }
 
     public function scopeActive($query)

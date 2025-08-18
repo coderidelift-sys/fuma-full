@@ -31,6 +31,14 @@ class TeamController extends Controller
     {
         try {
             $teams = $this->getFilteredTeams($request)->paginate(10);
+
+            // Cache unfiltered team data for 10 minutes
+            if (!$request->hasAny(['search', 'city', 'country', 'rating_min'])) {
+                return cache()->remember('teams_data_page_' . $request->get('page', 1), 600, function () use ($teams) {
+                    return response()->json($teams);
+                });
+            }
+
             return response()->json($teams);
         } catch (Exception $e) {
             Log::error('Error fetching teams data: ' . $e->getMessage());
@@ -40,7 +48,10 @@ class TeamController extends Controller
 
     private function getTeamsQuery()
     {
-        return Team::withCount(['players', 'tournaments']);
+        return Team::select([
+            'id', 'name', 'short_name', 'logo', 'city', 'country',
+            'rating', 'manager_id', 'created_at'
+        ])->withCount(['players', 'tournaments']);
     }
 
     private function getFilteredTeams(Request $request)

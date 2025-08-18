@@ -33,7 +33,12 @@ class PlayerController extends Controller
     public function playersData(Request $request): JsonResponse
     {
         try {
-            $query = Player::with(['team']);
+            // Optimized query with specific field selection
+            $query = Player::select([
+                'id', 'name', 'position', 'jersey_number', 'avatar',
+                'nationality', 'rating', 'goals_scored', 'assists',
+                'team_id', 'created_at', 'birth_date',
+            ])->with(['team:id,name,short_name,logo']);
 
             // Apply filters
             if ($request->filled('search')) {
@@ -54,6 +59,13 @@ class PlayerController extends Controller
             }
 
             $players = $query->orderBy('name')->paginate(10);
+
+            // Cache the response for 5 minutes if no search/filter applied
+            if (!$request->hasAny(['search', 'position', 'team', 'nationality'])) {
+                return cache()->remember('players_data_page_' . $request->get('page', 1), 300, function () use ($players) {
+                    return response()->json($players);
+                });
+            }
 
             return response()->json($players);
         } catch (Exception $e) {

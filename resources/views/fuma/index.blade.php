@@ -506,7 +506,7 @@
             <div class="row g-3" id="upcoming-matches-container"></div>
 
             <div class="text-center mt-4"> <!-- Smaller top margin -->
-                <a href="matches.html" class="btn btn-primary px-4">
+                <a href="{{ route('matches.index') }}" class="btn btn-primary px-4">
                     <i class="fas fa-list me-2"></i> View All Matches
                 </a>
             </div>
@@ -524,7 +524,7 @@
             <div class="row g-4" id="top-players-container"></div>
 
             <div class="text-center mt-5">
-                <a href="players.html" class="btn btn-primary px-4">
+                <a href="{{ route('players.index') }}" class="btn btn-primary px-4">
                     <i class="fas fa-users me-2"></i> View All Players
                 </a>
             </div>
@@ -539,42 +539,8 @@
                 <p class="text-muted">Iconic venues hosting our tournaments</p>
             </div>
 
-            <div class="row g-4">
-                <div class="col-lg-4 col-md-6">
-                    <div class="stadium-card animate__animated animate__fadeIn">
-                        <img src="https://images.squarespace-cdn.com/content/v1/6541b7a7b9fd1140888a8017/20e885ad-786d-499b-8316-531d56d1741e/stadion+terbesar+di+eropa+-+Signal+Iduna+Park+Stadium-Spun+Global+-+Arne+Museler+Wikimedia.jpg"
-                            alt="Stadium" class="stadium-img">
-                        <div class="stadium-overlay">
-                            <h4>National Stadium</h4>
-                            <p class="mb-1"><i class="fas fa-map-marker-alt me-1"></i> New York, USA</p>
-                            <p class="mb-0"><i class="fas fa-people-arrows me-1"></i> Capacity: 50,000</p>
-                        </div>
-                    </div>
-                </div>
+            <div class="row g-4" id="venues-container">
 
-                <div class="col-lg-4 col-md-6">
-                    <div class="stadium-card animate__animated animate__fadeIn" style="animation-delay: 0.2s;">
-                        <img src="https://images.squarespace-cdn.com/content/v1/6541b7a7b9fd1140888a8017/fddcc8d2-a658-469f-a9f3-4a42cb917723/stadion+terbesar+di+eropa+-+Camp+Nou+-+Spun+Global+-+Freepik.jpg"
-                            alt="Stadium" class="stadium-img">
-                        <div class="stadium-overlay">
-                            <h4>City Arena</h4>
-                            <p class="mb-1"><i class="fas fa-map-marker-alt me-1"></i> London, UK</p>
-                            <p class="mb-0"><i class="fas fa-people-arrows me-1"></i> Capacity: 35,000</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-4 col-md-6">
-                    <div class="stadium-card animate__animated animate__fadeIn" style="animation-delay: 0.4s;">
-                        <img src="https://cdn0-production-images-kly.akamaized.net/d0R3RNOjc8Eh4_Agnv3_sFi2RIU=/1200x675/smart/filters:quality(75):strip_icc():format(jpeg)/kly-media-production/medias/1470648/original/042269500_1484242942-chelsea.jpg"
-                            alt="Stadium" class="stadium-img">
-                        <div class="stadium-overlay">
-                            <h4>Community Ground</h4>
-                            <p class="mb-1"><i class="fas fa-map-marker-alt me-1"></i> Jakarta, Indonesia</p>
-                            <p class="mb-0"><i class="fas fa-people-arrows me-1"></i> Capacity: 15,000</p>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </section>
@@ -675,11 +641,11 @@
                 <div class="col-lg-2 col-md-6 mb-4">
                     <h5 class="text-white mb-4">Quick Links</h5>
                     <ul class="list-unstyled">
-                        <li class="mb-2"><a href="#hero" class="text-white">Home</a></li>
-                        <li class="mb-2"><a href="#tournaments" class="text-white">Tournaments</a></li>
-                        <li class="mb-2"><a href="#teams" class="text-white">Teams</a></li>
-                        <li class="mb-2"><a href="#matches" class="text-white">Matches</a></li>
-                        <li class="mb-2"><a href="#players" class="text-white">Players</a></li>
+                        <li class="mb-2"><a style="text-decoration: none" href="#hero" class="text-white">Home</a></li>
+                        <li class="mb-2"><a style="text-decoration: none" href="#tournaments" class="text-white">Tournaments</a></li>
+                        <li class="mb-2"><a style="text-decoration: none" href="#teams" class="text-white">Teams</a></li>
+                        <li class="mb-2"><a style="text-decoration: none" href="#matches" class="text-white">Matches</a></li>
+                        <li class="mb-2"><a style="text-decoration: none" href="#players" class="text-white">Players</a></li>
                     </ul>
                 </div>
 
@@ -809,6 +775,7 @@
                     renderTopTeams(data.topTeams);
                     renderTopPlayers(data.topPlayers);
                     renderUpcomingMatches(data.upcomingMatches);
+                    renderVenues(data.venues);
                 })
                 .catch(error => {
                     console.error('There was a problem fetching the homepage data:', error);
@@ -860,6 +827,7 @@
                 });
             };
             const toTitleCase = (str) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+            const routeDetail = (tournamentId) => `{{ route('tournaments.show', ':id') }}`.replace(':id', tournamentId);
 
             container.innerHTML = tournaments.map(tournament => `
                 <div class="${colClass}">
@@ -873,7 +841,7 @@
                             <p class="card-text small text-muted mb-3">${tournament.description}</p>
                             <div class="d-flex justify-content-between align-items-center">
                                 <span class="text-muted small"><i class="fas fa-users me-1"></i>${tournament.max_teams} Teams</span>
-                                <a href="#${tournament.id}" class="btn btn-sm btn-outline-primary">View</a>
+                                <a href="${routeDetail(tournament.id)}" class="btn btn-sm btn-outline-primary">View</a>
                             </div>
                         </div>
                     </div>
@@ -883,6 +851,7 @@
 
         function renderTopTeams(teams) {
             const container = document.getElementById('top-teams-container');
+            const routeDetail = (teamId) => `{{ route('teams.show', ':id') }}`.replace(':id', teamId);
 
             container.innerHTML = teams.map(team => `
                 <div class="col-xl-3 col-lg-4 col-md-6">
@@ -907,7 +876,7 @@
                                     <i class="fas fa-star text-warning me-1"></i>${team.rating}
                                 </span>
                             </div>
-                            <a href="#${team.id}" class="btn btn-sm btn-outline-primary w-100">
+                            <a href="${routeDetail(team.id)}" class="btn btn-sm btn-outline-primary w-100">
                                 View Team
                             </a>
                         </div>
@@ -923,20 +892,21 @@
                     text.slice(0, maxLength) + '…' :
                     text;
             };
+            const routeDetail = (playerId) => `{{ route('players.show', ':id') }}`.replace(':id', playerId);
 
             container.innerHTML = players.map(player => `
                 <div class="col-lg-3 col-md-6">
                     <div class="player-card animate__animated animate__fadeInUp">
                         <img src="https://images.hdqwalls.com/wallpapers/cristiano-ronaldo-fifa-world-cup-qatar-4k-dx.jpg"
                             alt="Player" class="player-img">
-                        <div class="player-overlay">
+                        <a class="player-overlay" href="${routeDetail(player.id)}" style="text-decoration: none; color: white;">
                             <h5 class="mb-1">${truncate(player.name, 20)}</h5>
                             <p class="mb-2">${player.position} | ${player.team.name}</p>
                             <div class="d-flex justify-content-between">
                                 <span><i class="fas fa-futbol me-1"></i> ${player.goals_scored} Goals</span>
                                 <span><i class="fas fa-star me-1 text-warning"></i> ${player.rating}</span>
                             </div>
-                        </div>
+                        </a>
                         <div class="player-number">${player.jersey_number}</div>
                     </div>
                 </div>
@@ -981,6 +951,7 @@
                         return 'bg-secondary';
                 }
             };
+            const routeDetail = (matchId) => `{{ route('matches.show', ':id') }}`.replace(':id', matchId);
 
             container.innerHTML = matches.map(match => `
                 <div class="col-md-6">
@@ -1017,7 +988,7 @@
                                     <i class="fas fa-map-marker-alt me-1"></i> ${match.venue}
                                 </span>
                                 <div>
-                                    <a href="#${match.id}" class="btn btn-sm btn-outline-primary">
+                                    <a href="${routeDetail(match.id)}" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                     <a href="#notification${match.id}" class="btn btn-sm btn-accent ms-1">
@@ -1025,6 +996,24 @@
                                     </a>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderVenues(venues) {
+            const container = document.getElementById('venues-container');
+
+            container.innerHTML = venues.map(venue => `
+                <div class="col-lg-4 col-md-6">
+                    <div class="stadium-card animate__animated animate__fadeIn">
+                        <img src="https://images.squarespace-cdn.com/content/v1/6541b7a7b9fd1140888a8017/20e885ad-786d-499b-8316-531d56d1741e/stadion+terbesar+di+eropa+-+Signal+Iduna+Park+Stadium-Spun+Global+-+Arne+Museler+Wikimedia.jpg"
+                            alt="Stadium" class="stadium-img">
+                        <div class="stadium-overlay">
+                            <h4>${venue.name}</h4>
+                            <p class="mb-1"><i class="fas fa-map-marker-alt me-1"></i> ${venue.full_address}</p>
+                            <p class="mb-0"><i class="fas fa-people-arrows me-1"></i> Capacity: ${venue.capacity_formatted}</p>
                         </div>
                     </div>
                 </div>

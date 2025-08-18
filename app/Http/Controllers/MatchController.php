@@ -38,7 +38,16 @@ class MatchController extends Controller
     public function data(Request $request): JsonResponse
     {
         try {
-            $query = MatchModel::with(['homeTeam', 'awayTeam', 'tournament']);
+            // Optimized query with specific field selection
+            $query = MatchModel::select([
+                'id', 'tournament_id', 'home_team_id', 'away_team_id',
+                'stage', 'status', 'scheduled_at', 'venue',
+                'home_score', 'away_score', 'current_minute'
+            ])->with([
+                'homeTeam:id,name,short_name,logo',
+                'awayTeam:id,name,short_name,logo',
+                'tournament:id,name'
+            ]);
 
             // Apply filters
             if ($request->filled('status')) {
@@ -604,6 +613,25 @@ class MatchController extends Controller
      * Get comprehensive match statistics from database
      */
     private function getMatchStatistics(MatchModel $match): array
+    {
+        // Cache match statistics for completed matches (they don't change)
+        if ($match->status === 'completed') {
+            return cache()->remember("match_stats_{$match->id}", 3600, function () use ($match) {
+                return $this->calculateMatchStatistics($match);
+            });
+        }
+
+        // For live matches, cache for shorter time
+        if ($match->status === 'live') {
+            return cache()->remember("match_stats_{$match->id}", 30, function () use ($match) {
+                return $this->calculateMatchStatistics($match);
+            });
+        }
+
+        return $this->calculateMatchStatistics($match);
+    }
+
+    private function calculateMatchStatistics(MatchModel $match): array
     {
         $homeTeamId = $match->home_team_id;
         $awayTeamId = $match->away_team_id;

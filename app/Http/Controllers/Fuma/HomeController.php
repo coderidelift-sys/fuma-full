@@ -8,6 +8,7 @@ use App\Models\Player;
 use App\Models\Team;
 use App\Models\Tournament;
 use App\Models\User;
+use App\Models\Venue;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -51,12 +52,18 @@ class HomeController extends Controller
             ->take(2)
             ->get();
 
+        $venues = Venue::active()
+            ->orderBy('capacity', 'desc')
+            ->take(3)
+            ->get();
+
         return response()->json([
             'quickStats' => $quickStats,
             'featuredTournaments' => $featuredTournaments,
             'topTeams' => $topTeams,
             'topPlayers' => $topPlayers,
-            'upcomingMatches' => $upcomingMatches
+            'upcomingMatches' => $upcomingMatches,
+            'venues' => $venues,
         ]);
     }
 

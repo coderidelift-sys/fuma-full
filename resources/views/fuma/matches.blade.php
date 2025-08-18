@@ -137,7 +137,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('dashboard') }}">Home</a>
+                        <a class="nav-link" href="{{ route('home') }}">Home</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('tournaments.index') }}">Tournaments</a>
@@ -187,7 +187,7 @@
                         <label for="statusFilter" class="form-label">Match Status</label>
                         <select id="statusFilter" class="form-select">
                             <option value="">All Status</option>
-                            <option value="upcoming">Upcoming</option>
+                            <option value="scheduled">Scheduled</option>
                             <option value="live">Live</option>
                             <option value="completed">Completed</option>
                         </select>
@@ -545,7 +545,7 @@
 
         function getStatusBadge(status) {
             const badges = {
-                'scheduled': '<span class="badge bg-primary badge-pill">Upcoming</span>',
+                'scheduled': '<span class="badge bg-primary badge-pill">Scheduled</span>',
                 'live': '<span class="badge bg-danger badge-pill live-badge">Live</span>',
                 'completed': '<span class="badge bg-secondary badge-pill">Completed</span>',
                 'cancelled': '<span class="badge bg-warning badge-pill">Cancelled</span>'

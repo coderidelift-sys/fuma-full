@@ -29,6 +29,11 @@ class Venue extends Model
         'capacity' => 'integer',
     ];
 
+    protected $appends = [
+        'full_address',
+        'capacity_formatted',
+    ];
+
     public function matches()
     {
         return $this->hasMany(MatchModel::class, 'venue_id');

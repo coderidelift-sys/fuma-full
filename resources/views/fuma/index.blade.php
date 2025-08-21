@@ -784,31 +784,32 @@
 
         function renderQuickStats(stats) {
             const container = document.getElementById('quick-stats-container');
+
             container.innerHTML = `
                 <div class="col-md-3">
                     <div class="stats-card bg-white slide-up" style="animation-delay: 0.1s;">
-                        <div class="stats-number text-primary">${stats.activeTournaments}</div>
+                        <div class="stats-number text-primary">${stats.activeTournaments ?? 0}</div>
                         <div class="stats-label">Active Tournaments</div>
                         <i class="fas fa-trophy mt-3 text-primary"></i>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="stats-card bg-white slide-up" style="animation-delay: 0.2s;">
-                        <div class="stats-number text-primary">${stats.registeredTeams}</div>
+                        <div class="stats-number text-primary">${stats.registeredTeams ?? 0}</div>
                         <div class="stats-label">Registered Teams</div>
                         <i class="fas fa-users mt-3 text-primary"></i>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="stats-card bg-white slide-up" style="animation-delay: 0.3s;">
-                        <div class="stats-number text-primary">${stats.players}</div>
+                        <div class="stats-number text-primary">${stats.players ?? 0}</div>
                         <div class="stats-label">Players</div>
                         <i class="fas fa-user mt-3 text-primary"></i>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="stats-card bg-white slide-up" style="animation-delay: 0.4s;">
-                        <div class="stats-number text-primary">${stats.matchesPlayed}</div>
+                        <div class="stats-number text-primary">${stats.matchesPlayed ?? 0}</div>
                         <div class="stats-label">Matches Played</div>
                         <i class="fas fa-futbol mt-3 text-primary"></i>
                     </div>

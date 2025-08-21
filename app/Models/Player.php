@@ -39,6 +39,58 @@ class Player extends Model
 
     protected $appends = ['age'];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Validation sebelum save
+        static::saving(function ($player) {
+            // Validate rating range
+            if ($player->rating < 0 || $player->rating > 100) {
+                throw new \InvalidArgumentException('Rating must be between 0-100');
+            }
+
+            // Validate statistics
+            if ($player->goals_scored < 0) {
+                throw new \InvalidArgumentException('Goals scored cannot be negative');
+            }
+
+            if ($player->assists < 0) {
+                throw new \InvalidArgumentException('Assists cannot be negative');
+            }
+
+            if ($player->clean_sheets < 0) {
+                throw new \InvalidArgumentException('Clean sheets cannot be negative');
+            }
+
+            if ($player->yellow_cards < 0) {
+                throw new \InvalidArgumentException('Yellow cards cannot be negative');
+            }
+
+            if ($player->red_cards < 0) {
+                throw new \InvalidArgumentException('Red cards cannot be negative');
+            }
+
+            // Validate physical attributes
+            if ($player->height && ($player->height < 100 || $player->height > 250)) {
+                throw new \InvalidArgumentException('Height must be between 100-250 cm');
+            }
+
+            if ($player->weight && ($player->weight < 30 || $player->weight > 150)) {
+                throw new \InvalidArgumentException('Weight must be between 30-150 kg');
+            }
+        });
+
+        // Cache invalidation setelah update
+        static::updated(function ($player) {
+            // Clear related caches
+            if ($player->wasChanged(['goals_scored', 'assists', 'clean_sheets', 'rating'])) {
+                \App\Services\CacheService::forgetPattern('player_stats');
+                \App\Services\CacheService::forgetPattern('home_top_players');
+            }
+        });
+    }
+
     public function team()
     {
         return $this->belongsTo(Team::class);

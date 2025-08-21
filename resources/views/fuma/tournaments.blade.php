@@ -182,7 +182,7 @@
                         <label for="statusFilter" class="form-label">Status</label>
                         <select id="statusFilter" class="form-select">
                             <option value="">All Status</option>
-                            <option value="active">Active</option>
+                            <option value="ongoing">Ongoing</option>
                             <option value="upcoming">Upcoming</option>
                             <option value="completed">Completed</option>
                         </select>

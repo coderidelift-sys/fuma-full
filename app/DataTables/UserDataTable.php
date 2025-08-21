@@ -28,7 +28,8 @@ class UserDataTable extends DataTable
                 return $users->created_at?->format('d F Y H:i');
             })
             ->editColumn('role', function ($users) {
-                return $users->roles()->first()?->display_name ?: 'N/A';
+                // Gunakan relasi yang sudah di-eager load untuk menghindari N+1
+                return $users->roles->first()?->display_name ?: 'N/A';
             })
             ->rawColumns(['action']);
     }
@@ -38,7 +39,10 @@ class UserDataTable extends DataTable
      */
     public function query(User $model): QueryBuilder
     {
-        return $model->newQuery();
+        // Pilih kolom minimal dan eager load roles agar kolom 'role' tidak memicu N+1
+        return $model->newQuery()
+            ->select(['id', 'name', 'email', 'created_at'])
+            ->with(['roles:id,name,display_name']);
     }
 
     /**

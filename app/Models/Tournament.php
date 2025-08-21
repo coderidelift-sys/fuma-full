@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CacheService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -56,12 +57,14 @@ class Tournament extends Model
 
     public function getStandingsAttribute()
     {
-        return cache()->remember("tournament_standings_{$this->id}", 300, function () {
-            return $this->teams()->orderBy('pivot_points', 'desc')
+        return CacheService::remember(
+            CacheService::key('tournament_standings', $this->id),
+            'standings',
+            fn () => $this->teams()->orderBy('pivot_points', 'desc')
                 ->orderBy('pivot_goal_difference', 'desc')
                 ->orderBy('pivot_goals_for', 'desc')
-                ->get();
-        });
+                ->get()
+        );
     }
 
     public function scopeActive($query)

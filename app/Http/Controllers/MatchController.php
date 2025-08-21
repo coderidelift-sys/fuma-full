@@ -17,17 +17,37 @@ use Illuminate\Support\Facades\DB;
 use Exception;
 use Carbon\Carbon;
 use App\Models\Player; // Added for player stats update
+use App\Events\MatchStatusUpdated;
+use App\Events\MatchScoreUpdated;
+use App\Events\MatchMinuteUpdated;
+use App\Services\CacheService;
+use Illuminate\Http\RedirectResponse;
+use App\Events\MatchEventChanged;
 
 class MatchController extends Controller
 {
     /**
      * Display a listing of matches
      */
-        public function index(): View
+    public function index(): View
     {
-        $tournaments = Tournament::all();
-        $teams = Team::all();
-        $venues = Venue::active()->get();
+        // Cache ringan (120s) untuk dropdown yang jarang berubah; aman dan mengurangi query berulang
+        $tournaments = CacheService::remember(
+            CacheService::key('ui', 'tournaments_min'),
+            'ui',
+            fn () => Tournament::query()->select('id', 'name')->orderBy('name')->get()
+        );
+        $teams = CacheService::remember(
+            CacheService::key('ui', 'teams_min'),
+            'ui',
+            fn () => Team::query()->select('id', 'name')->orderBy('name')->get()
+        );
+        // Pilih kolom minimal yang dibutuhkan Blade: id, name, city, capacity (untuk capacity_formatted accessor)
+        $venues = CacheService::remember(
+            CacheService::key('ui', 'venues_active_min'),
+            'ui',
+            fn () => Venue::active()->select('id', 'name', 'city', 'capacity')->orderBy('name')->get()
+        );
 
         return view('fuma.matches', compact('tournaments', 'teams', 'venues'));
     }
@@ -81,6 +101,13 @@ class MatchController extends Controller
             $query->orderBy('scheduled_at', 'asc');
 
             $matches = $query->paginate(10);
+
+            // Cache ringan untuk daftar default tanpa filter agar beban query berkurang (hindari untuk live data panjang)
+            if (!$request->hasAny(['status', 'tournament', 'date', 'search'])) {
+                $page = (int) $request->get('page', 1);
+                $data = cache()->remember('matches_data_page_' . $page, 60, fn () => $matches->toArray());
+                return response()->json($data);
+            }
 
             return response()->json($matches);
         } catch (Exception $e) {
@@ -178,10 +205,15 @@ class MatchController extends Controller
             'awayTeam',
             'tournament',
             'events' => function($query) {
-                $query->orderBy('minute', 'asc');
+                $query->orderBy('created_at', 'asc');
             },
             'events.player',
-            'events.team'
+            'events.team',
+            // Eager load commentary & user to avoid N+1 in Blade
+            'commentary' => function($query) {
+                $query->orderBy('minute');
+            },
+            'commentary.user:id,name,avatar'
         ]);
 
         // Get comprehensive match data
@@ -316,6 +348,12 @@ class MatchController extends Controller
                 'started_at' => now()
             ]);
 
+            // Bersihkan cache statistik saat status berubah ke live
+            cache()->forget("match_stats_{$match->id}");
+
+            // Broadcast status change
+            MatchStatusUpdated::dispatch($match->id, 'live');
+
             return response()->json([
                 'success' => true,
                 'message' => 'Match started successfully!',
@@ -348,13 +386,15 @@ class MatchController extends Controller
                 'paused_at' => now()
             ]);
 
+            // Broadcast status change
+            MatchStatusUpdated::dispatch($match->id, 'paused');
+
             return response()->json([
                 'success' => true,
                 'message' => 'Match paused successfully!',
                 'data' => $match->fresh()
             ]);
         } catch (Exception $e) {
-            dd($e);
             Log::error('Error pausing match: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
@@ -380,6 +420,12 @@ class MatchController extends Controller
                 'status' => 'live',
                 'resumed_at' => now()
             ]);
+
+            // Bersihkan cache statistik saat status berubah ke live
+            cache()->forget("match_stats_{$match->id}");
+
+            // Broadcast status change
+            MatchStatusUpdated::dispatch($match->id, 'live');
 
             return response()->json([
                 'success' => true,
@@ -435,11 +481,18 @@ class MatchController extends Controller
                 'current_minute' => 90
             ]);
 
+            // Invalidasi cache statistik karena status & skor berubah
+            cache()->forget("match_stats_{$match->id}");
+
             // Update tournament standings
             $this->updateTournamentStandings($match);
 
             // Update player statistics
             $this->updatePlayerStatistics($match);
+
+            // Broadcast status and score change
+            MatchStatusUpdated::dispatch($match->id, 'completed');
+            MatchScoreUpdated::dispatch($match->id, (int) $request->home_score, (int) $request->away_score);
 
             return response()->json([
                 'success' => true,
@@ -491,7 +544,18 @@ class MatchController extends Controller
 
             // Log the goal event if scorer is provided
             if ($request->scorer_id) {
-                $teamId = $request->home_score > $request->away_score ? $match->home_team_id : $match->away_team_id;
+                // Tentukan tim pencetak gol secara logis: utamakan tim dari pemain pencetak
+                $teamId = null;
+                if (isset($request->scorer_id)) {
+                    $scorer = Player::find($request->scorer_id);
+                    if ($scorer) {
+                        $teamId = $scorer->team_id;
+                    }
+                }
+                // Fallback ke heuristik lama agar backward compatible jika tidak ada scorer/team
+                if (!$teamId) {
+                    $teamId = $request->home_score > $request->away_score ? $match->home_team_id : $match->away_team_id;
+                }
 
                 MatchEvent::create([
                     'match_id' => $match->id,
@@ -512,6 +576,12 @@ class MatchController extends Controller
                     $this->updatePlayerStats($request->assist_id, 'assist');
                 }
             }
+
+            // Invalidasi cache statistik karena skor & event berubah
+            cache()->forget("match_stats_{$match->id}");
+
+            // Broadcast score change
+            MatchScoreUpdated::dispatch($match->id, (int) $match->home_score, (int) $match->away_score);
 
             return response()->json([
                 'success' => true,
@@ -555,6 +625,12 @@ class MatchController extends Controller
             $match->update([
                 'current_minute' => $request->current_minute
             ]);
+
+            // Invalidasi cache statistik untuk live match karena menit berjalan berubah
+            CacheService::forget("match_stats_{$match->id}");
+
+            // Broadcast minute update
+            MatchMinuteUpdated::dispatch($match->id, (int) $match->current_minute);
 
             return response()->json([
                 'success' => true,
@@ -636,8 +712,10 @@ class MatchController extends Controller
         $homeTeamId = $match->home_team_id;
         $awayTeamId = $match->away_team_id;
 
-        // Get all match events for this match
-        $matchEvents = $match->events()->with(['team', 'player'])->get();
+        // Reuse relasi yang sudah di-load untuk menghindari query ganda; fallback jika belum di-load
+        $matchEvents = $match->relationLoaded('events')
+            ? $match->events
+            : $match->events()->with(['team', 'player'])->get();
 
         // Initialize statistics arrays
         $stats = [
@@ -933,11 +1011,18 @@ class MatchController extends Controller
         $homeLineup = $this->getTeamLineup($match->id, $match->home_team_id);
         $awayLineup = $this->getTeamLineup($match->id, $match->away_team_id);
 
-        // Get match events for timeline
-        $events = $match->events()
-            ->with(['player', 'team'])
-            ->orderBy('minute', 'asc')
-            ->get();
+        $events = $match->relationLoaded('events')
+            ? $match->events
+            : $match->events()->with(['player', 'team'])->orderBy('created_at', 'asc')->get();
+
+        // Precompute subsets & aggregates to avoid heavy operations in Blade
+        $firstHalfEvents = $events->filter(fn ($e) => (int) $e->minute <= 45)->values();
+        $secondHalfEvents = $events->filter(fn ($e) => (int) $e->minute > 45)->values();
+
+        $firstHalfGoalsHome = $firstHalfEvents->where('type', 'goal')->where('team_id', $match->home_team_id)->count();
+        $firstHalfGoalsAway = $firstHalfEvents->where('type', 'goal')->where('team_id', $match->away_team_id)->count();
+        $secondHalfGoalsHome = $secondHalfEvents->where('type', 'goal')->where('team_id', $match->home_team_id)->count();
+        $secondHalfGoalsAway = $secondHalfEvents->where('type', 'goal')->where('team_id', $match->away_team_id)->count();
 
         // Transform events for frontend
         $transformedEvents = $events->map(function ($event) {
@@ -957,10 +1042,56 @@ class MatchController extends Controller
             'homeLineup' => $homeLineup,
             'awayLineup' => $awayLineup,
             'events' => $transformedEvents,
+            // Provide raw events subsets for Blade iteration to avoid filtering in view
+            'firstHalfEvents' => $firstHalfEvents,
+            'secondHalfEvents' => $secondHalfEvents,
+            // Provide precomputed goal counts per half for score badges
+            'firstHalfGoalsHome' => $firstHalfGoalsHome,
+            'firstHalfGoalsAway' => $firstHalfGoalsAway,
+            'secondHalfGoalsHome' => $secondHalfGoalsHome,
+            'secondHalfGoalsAway' => $secondHalfGoalsAway,
             'homeTeam' => $match->homeTeam,
             'awayTeam' => $match->awayTeam,
             'tournament' => $match->tournament
         ];
+    }
+
+    /**
+     * Lightweight JSON for partial updates (score/status/stats/timeline)
+     */
+    public function jsonSnapshot(MatchModel $match): JsonResponse
+    {
+        // Ensure relations for snapshot
+        $match->loadMissing(['homeTeam:id,name', 'awayTeam:id,name']);
+
+        $events = $match->events()->with(['player:id,name', 'team:id,name'])->orderBy('minute')->get();
+        $stats = $this->getMatchStatistics($match);
+
+        return response()->json([
+            'match' => [
+                'id' => $match->id,
+                'status' => $match->status,
+                'home_score' => (int) ($match->home_score ?? 0),
+                'away_score' => (int) ($match->away_score ?? 0),
+                'current_minute' => (int) ($match->current_minute ?? 0),
+                'started_at' => optional($match->started_at)->toIso8601String(),
+                'resumed_at' => optional($match->resumed_at)->toIso8601String(),
+                'paused_at' => optional($match->paused_at)->toIso8601String(),
+                'home_team' => ['id' => $match->homeTeam->id, 'name' => $match->homeTeam->name],
+                'away_team' => ['id' => $match->awayTeam->id, 'name' => $match->awayTeam->name],
+            ],
+            'events' => $events->map(function ($e) {
+                return [
+                    'id' => $e->id,
+                    'type' => $e->type,
+                    'minute' => (int) $e->minute,
+                    'description' => $e->description,
+                    'player' => $e->player ? ['id' => $e->player->id, 'name' => $e->player->name] : null,
+                    'team' => $e->team ? ['id' => $e->team->id, 'name' => $e->team->name] : null,
+                ];
+            }),
+            'stats' => $stats,
+        ]);
     }
 
     /**

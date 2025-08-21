@@ -548,7 +548,7 @@
                                         {{-- Match Status & Score --}}
                                         <div class="col-md-4 text-center">
                                             @php
-                                                $scheduled = \Carbon\Carbon::parse($match['scheduled_at']);
+                                                $scheduled = \Carbon\Carbon::parse($match['started_at']);
                                             @endphp
 
                                             @if ($match['status'] === 'scheduled')

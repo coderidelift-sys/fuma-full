@@ -13,7 +13,11 @@ class TeamController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Team::with(['manager', 'players']);
+        $query = Team::select(['id','name','short_name','logo','city','country','rating','manager_id','created_at'])
+            ->with([
+                'manager:id,name',
+                'players:id,team_id,name,position,jersey_number,avatar'
+            ]);
 
         // Filter by city
         if ($request->has('city')) {

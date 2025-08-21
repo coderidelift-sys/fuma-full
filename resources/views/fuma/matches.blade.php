@@ -237,8 +237,6 @@
 
 
 
-
-
                         </tbody>
                     </table>
                 </div>
@@ -354,6 +352,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <!-- Bootstrap 5 JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Pusher JS -->
+    <script src="https://js.pusher.com/8.2/pusher.min.js"></script>
     <!-- Custom JS for filtering -->
     <script>
         // Initialize Toastr
@@ -373,80 +373,113 @@
 
             // Initialize filters
             initializeFilters();
+            // Realtime: subscribe to Pusher to auto-refresh list on updates
+            initializePusherForMatches();
         });
+        function initializePusherForMatches() {
+            try {
+                const pusherKey = '{{ env('PUSHER_APP_KEY') }}';
+                const pusherCluster = '{{ env('PUSHER_APP_CLUSTER', 'mt1') }}';
+                const pusher = new Pusher(pusherKey, {
+                    cluster: pusherCluster,
+                    forceTLS: true
+                });
+                const channel = pusher.subscribe('matches');
+                // Partial refresh: cukup panggil loadMatches (list memang dirender dinamis)
+                const throttledReload = throttle(loadMatches, 500);
+                channel.bind('match.status.updated', function(data){
+                    // Update status badge in-place if row exists; else reload
+                    if(!data || typeof data.match_id === 'undefined') return throttledReload();
+                    const row = document.querySelector(`tr[data-id="${data.match_id}"]`);
+                    if (!row) return throttledReload();
+                    const td = row.querySelector('.td-status');
+                    if (td) td.innerHTML = getStatusBadge(data.status);
+                });
+                channel.bind('match.score.updated', function(data){
+                    if(!data || typeof data.match_id === 'undefined') return throttledReload();
+                    const row = document.querySelector(`tr[data-id="${data.match_id}"]`);
+                    if (!row) return throttledReload();
+                    const scoreEl = row.querySelector('.match-score');
+                    if (scoreEl) scoreEl.textContent = `${data.home_score} - ${data.away_score}`;
+                });
+            } catch (e) {
+                console.error('Pusher init error:', e);
+            }
+        }
+
+        function throttle(fn, wait){
+            let last = 0; let timer;
+            return function(){
+                const now = Date.now();
+                if(now - last >= wait){ last = now; fn(); }
+                else {
+                    clearTimeout(timer); timer = setTimeout(()=>{ last = Date.now(); fn(); }, wait-(now-last));
+                }
+            }
+        }
 
         // Load matches data
         function loadMatches(page = 1) {
-            const statusFilter = $('#statusFilter').val();
-            const tournamentFilter = $('#tournamentFilter').val();
-            const dateFilter = $('#dateFilter').val();
-
-            $.ajax({
-                url: '{{ route('matches.data') }}',
-                method: 'GET',
-                data: {
-                    page: page,
-                    status: statusFilter,
-                    tournament: tournamentFilter,
-                    date: dateFilter
-                },
-                success: function(response) {
+            const params = {
+                page: page,
+                status: $('#statusFilter').val(),
+                tournament: $('#tournamentFilter').val(),
+                date: $('#dateFilter').val()
+            };
+            $.get('{{ route('matches.data') }}', params)
+                .done(function(response){
+                    if(!response || !response.data) return;
                     renderMatchesTable(response.data);
                     renderPagination(response);
-                },
-                error: function(xhr) {
+                })
+                .fail(function(xhr){
                     toastr.error('Failed to load matches');
                     console.error('Error loading matches:', xhr);
-                }
-            });
+                });
         }
 
         // Render matches table
         function renderMatchesTable(matches) {
-            const tbody = $('#matchesTableBody');
-            tbody.empty();
-
-            if (matches.length === 0) {
+            const tbody = $('#matchesTableBody').empty();
+            if (!Array.isArray(matches) || matches.length === 0) {
                 tbody.append('<tr><td colspan="6" class="text-center">No matches found</td></tr>');
                 return;
             }
-
-            matches.forEach(function(match) {
-                const row = `
-                    <tr>
-                        <td>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="text-end" style="width: 40%;">
-                                    <div class="d-flex align-items-center justify-content-end">
-                                        <span class="me-2">${match.home_team.name}</span>
-                                        <img src="${match.home_team.logo || 'https://img.freepik.com/premium-vector/soccer-ball-icon-logo-template-football-logo-symbol_7649-4092.jpg?w=2000'}" alt="Team Logo" class="team-logo-sm">
-                                    </div>
-                                </div>
-                                <div class="px-2 text-center">
-                                    <div class="text-muted small">${formatMatchTime(match.scheduled_at)}</div>
-                                    <div class="match-score">${getMatchScore(match)}</div>
-                                </div>
-                                <div class="text-start" style="width: 40%;">
-                                    <div class="d-flex align-items-center">
-                                        <img src="${match.away_team.logo || 'https://img.freepik.com/premium-vector/soccer-ball-icon-logo-template-football-logo-symbol_7649-4092.jpg?w=2000'}" alt="Team Logo" class="team-logo-sm me-2">
-                                        <span>${match.away_team.name}</span>
-                                    </div>
+            const rows = matches.map(function(match){
+                return `
+                <tr data-id="${match.id}">
+                    <td>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="text-end" style="width: 40%;">
+                                <div class="d-flex align-items-center justify-content-end">
+                                    <span class="me-2">${match.home_team.name}</span>
+                                    <img src="${match.home_team.logo || 'https://img.freepik.com/premium-vector/soccer-ball-icon-logo-template-football-logo-symbol_7649-4092.jpg?w=2000'}" alt="Team Logo" class="team-logo-sm">
                                 </div>
                             </div>
-                        </td>
-                        <td>${match.tournament.name}</td>
-                        <td>${formatMatchDateTime(match.scheduled_at)}</td>
-                        <td>${match.venue || 'TBD'}</td>
-                        <td>${getStatusBadge(match.status)}</td>
-                        <td>
-                            <a href="${'{{ route('matches.show', ':id') }}'.replace(':id', match.id)}" class="btn btn-sm btn-outline-primary action-btn">
-                                <i class="fas fa-eye"></i> View
-                            </a>
-                        </td>
-                    </tr>
-                `;
-                tbody.append(row);
-            });
+                            <div class="px-2 text-center">
+                                <div class="text-muted small">${formatMatchTime(match.scheduled_at)}</div>
+                                <div class="match-score">${getMatchScore(match)}</div>
+                            </div>
+                            <div class="text-start" style="width: 40%;">
+                                <div class="d-flex align-items-center">
+                                    <img src="${match.away_team.logo || 'https://img.freepik.com/premium-vector/soccer-ball-icon-logo-template-football-logo-symbol_7649-4092.jpg?w=2000'}" alt="Team Logo" class="team-logo-sm me-2">
+                                    <span>${match.away_team.name}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${match.tournament.name}</td>
+                    <td>${formatMatchDateTime(match.scheduled_at)}</td>
+                    <td>${match.venue || 'TBD'}</td>
+                    <td class="td-status">${getStatusBadge(match.status)}</td>
+                    <td>
+                        <a href="${'{{ route('matches.show', ':id') }}'.replace(':id', match.id)}" class="btn btn-sm btn-outline-primary action-btn">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                    </td>
+                </tr>`;
+            }).join('');
+            tbody.append(rows);
         }
 
         function renderPagination(response) {
@@ -496,7 +529,7 @@
                 if (i === '...') {
                     paginationHtml += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
                 } else if (i === current) {
-                    paginationHtml += `<li class="page-item active"><a class="page-link" href="#">${i}</a></li>`;
+                    paginationHtml += `<li class="page-item active"><a class="page-link text-white" href="#">${i}</a></li>`;
                 } else {
                     paginationHtml +=
                         `<li class="page-item"><a class="page-link" href="#" onclick="event.preventDefault(); loadMatches(${i})">${i}</a></li>`;

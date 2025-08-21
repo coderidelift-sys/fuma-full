@@ -281,7 +281,7 @@
         var urlRoot = '{{ url('/') }}';
         var urlSearch = urlRoot + "/api/search?user_id=" + '{{ Auth::id() }}';
     </script>
-    @vite(['resources/js/main.js', 'resources/js/app-logistics-dashboard.js'])
+    @vite(['resources/js/app.js', 'resources/js/main.js', 'resources/js/app-logistics-dashboard.js'])
 
     <!-- Page JS -->
 

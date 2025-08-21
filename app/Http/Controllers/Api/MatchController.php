@@ -12,7 +12,13 @@ class MatchController extends Controller
 {
     public function index(Request $request)
     {
-        $query = MatchModel::with(['tournament', 'homeTeam', 'awayTeam']);
+        $query = MatchModel::select([
+            'id','tournament_id','home_team_id','away_team_id','stage','status','scheduled_at','venue','home_score','away_score','current_minute'
+        ])->with([
+            'tournament:id,name',
+            'homeTeam:id,name,short_name,logo',
+            'awayTeam:id,name,short_name,logo'
+        ]);
 
         // Filter by tournament
         if ($request->has('tournament_id')) {
@@ -84,10 +90,11 @@ class MatchController extends Controller
     public function show($id)
     {
         $match = MatchModel::with([
-            'tournament',
-            'homeTeam',
-            'awayTeam',
-            'events.player'
+            'tournament:id,name',
+            'homeTeam:id,name,short_name,logo',
+            'awayTeam:id,name,short_name,logo',
+            'events' => fn($q) => $q->select(['id','match_id','player_id','team_id','type','minute','description'])
+                ->with(['player:id,name'])
         ])->findOrFail($id);
 
         return response()->json([
@@ -123,7 +130,11 @@ class MatchController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'MatchModel updated successfully',
-            'data' => $match->load(['tournament', 'homeTeam', 'awayTeam'])
+            'data' => $match->load([
+                'tournament:id,name',
+                'homeTeam:id,name,short_name,logo',
+                'awayTeam:id,name,short_name,logo'
+            ])
         ]);
     }
 
@@ -200,7 +211,11 @@ class MatchController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'MatchModel score updated successfully',
-            'data' => $match->load(['tournament', 'homeTeam', 'awayTeam'])
+            'data' => $match->load([
+                'tournament:id,name',
+                'homeTeam:id,name,short_name,logo',
+                'awayTeam:id,name,short_name,logo'
+            ])
         ]);
     }
 }

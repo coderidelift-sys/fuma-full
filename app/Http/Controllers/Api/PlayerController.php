@@ -12,7 +12,12 @@ class PlayerController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Player::with(['team']);
+        // Optimized query dengan selective field loading
+        $query = Player::select([
+            'id', 'name', 'position', 'jersey_number', 'avatar',
+            'nationality', 'rating', 'goals_scored', 'assists',
+            'team_id', 'created_at', 'birth_date'
+        ])->with(['team:id,name,short_name,logo']);
 
         // Filter by position
         if ($request->has('position')) {
@@ -38,6 +43,12 @@ class PlayerController extends Controller
                 case 'rating':
                     $query->topRated();
                     break;
+                case 'assists':
+                    $query->orderBy('assists', 'desc');
+                    break;
+                case 'recent':
+                    $query->latest();
+                    break;
                 default:
                     $query->latest();
             }
@@ -45,7 +56,9 @@ class PlayerController extends Controller
             $query->latest();
         }
 
-        $players = $query->paginate(10);
+        // Pagination dengan limit yang reasonable
+        $perPage = min($request->get('per_page', 10), 50); // Max 50 per page
+        $players = $query->paginate($perPage);
 
         return response()->json([
             'success' => true,
@@ -91,9 +104,17 @@ class PlayerController extends Controller
         ], 201);
     }
 
-    public function show($id)
+    public function show(Player $player)
     {
-        $player = Player::with(['team', 'matchEvents'])->findOrFail($id);
+        // Load only necessary relationships
+        $player->load([
+            'team:id,name,short_name,logo,city,country',
+            'matchEvents' => function($query) {
+                $query->select('id', 'match_id', 'player_id', 'type', 'minute')
+                      ->orderBy('minute', 'desc')
+                      ->limit(10);
+            }
+        ]);
 
         return response()->json([
             'success' => true,

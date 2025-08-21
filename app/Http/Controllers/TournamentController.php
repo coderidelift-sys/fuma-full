@@ -115,7 +115,9 @@ class TournamentController extends Controller
         $topScorers = $this->getTopScorers($tournament);
         $standings = $this->getStandings($tournament);
         $statistics = $this->getTournamentStatistics($tournament);
-        $organizers = User::whereHas('roles', fn($query) => $query->where('name', 'organizer'))->get();
+        // Ambil hanya kolom yang dipakai untuk mengurangi payload
+        $organizers = User::whereHas('roles', fn($query) => $query->where('name', 'organizer'))
+            ->get(['id', 'name']);
         $venues = Venue::active()->get(['id', 'name', 'address', 'city', 'country']);
 
         return view('fuma.tournament_detail', array_merge($tournamentData, [
@@ -162,6 +164,7 @@ class TournamentController extends Controller
                 'status' => $match->status,
                 'home_score' => $match->home_score,
                 'away_score' => $match->away_score,
+                'started_at' => $match->started_at,
             ]),
         ];
     }
@@ -320,7 +323,7 @@ class TournamentController extends Controller
     public function availableTeams(Request $request, Tournament $tournament)
     {
         $search = $request->get('search', '');
-        $registeredIds = $tournament->teams()->pluck('team_id');
+        $registeredIds = $tournament->teams()->pluck('id');
 
         $teams = Team::whereNotIn('id', $registeredIds)
             ->where('name', 'like', "%{$search}%")

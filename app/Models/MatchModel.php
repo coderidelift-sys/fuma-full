@@ -47,6 +47,48 @@ class MatchModel extends Model
         'attendance' => 'integer',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Validation sebelum save
+        static::saving(function ($match) {
+            // Validate scores
+            if ($match->home_score !== null && $match->home_score < 0) {
+                throw new \InvalidArgumentException('Home score cannot be negative');
+            }
+
+            if ($match->away_score !== null && $match->away_score < 0) {
+                throw new \InvalidArgumentException('Away score cannot be negative');
+            }
+
+            // Validate current minute
+            if ($match->current_minute !== null && ($match->current_minute < 0 || $match->current_minute > 120)) {
+                throw new \InvalidArgumentException('Current minute must be between 0-120');
+            }
+
+            // Validate duration
+            if ($match->duration && ($match->duration < 45 || $match->duration > 120)) {
+                throw new \InvalidArgumentException('Duration must be between 45-120 minutes');
+            }
+
+            // Validate scheduled date
+            if ($match->scheduled_at && $match->scheduled_at <= $match->created_at) {
+                throw new \InvalidArgumentException('Scheduled date must be after creation date');
+            }
+        });
+
+        // Cache invalidation setelah update
+        static::updated(function ($match) {
+            // Clear related caches
+            if ($match->wasChanged(['status', 'home_score', 'away_score', 'current_minute'])) {
+                \App\Services\CacheService::forget("match_stats_{$match->id}");
+                \App\Services\CacheService::forgetPattern('home_upcoming_matches');
+                \App\Services\CacheService::forgetPattern('tournament_standings');
+            }
+        });
+    }
+
     public function tournament()
     {
         return $this->belongsTo(Tournament::class);

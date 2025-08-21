@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\MatchModel;
 use App\Models\Team;
 use App\Models\Tournament;
+use App\Services\CacheService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -32,11 +33,12 @@ class TeamController extends Controller
         try {
             $teams = $this->getFilteredTeams($request)->paginate(10);
 
-            // Cache unfiltered team data for 10 minutes
+            // Cache data dengan standard duration
             if (!$request->hasAny(['search', 'city', 'country', 'rating_min'])) {
-                return cache()->remember('teams_data_page_' . $request->get('page', 1), 600, function () use ($teams) {
-                    return response()->json($teams);
-                });
+                $page = (int) $request->get('page', 1);
+                $cacheKey = CacheService::paginatedKey('teams_data', $page);
+                $data = CacheService::remember($cacheKey, 'list', fn () => $teams->toArray());
+                return response()->json($data);
             }
 
             return response()->json($teams);

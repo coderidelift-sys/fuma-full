@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Exception;
+use App\Events\MatchEventChanged;
+use App\Events\MatchScoreUpdated;
 
 class MatchEventController extends Controller
 {
@@ -80,6 +82,14 @@ class MatchEventController extends Controller
                 $this->updatePlayerStats($request->player_id, $request->type);
             }
 
+            // Invalidate match stats cache as underlying events changed
+            cache()->forget("match_stats_{$match->id}");
+
+            // Broadcast event created
+            MatchEventChanged::dispatch($match->id, 'created', [
+                'event' => $event->toArray()
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Match event created successfully!',
@@ -124,9 +134,10 @@ class MatchEventController extends Controller
                 ], 422);
             }
 
-            // Store old values for statistics update
+            // Store old values for statistics update & score synchronization
             $oldType = $event->type;
             $oldPlayerId = $event->player_id;
+            $oldTeamId = $event->team_id;
 
             // Update the event
             $event->update($request->all());
@@ -140,6 +151,27 @@ class MatchEventController extends Controller
                     $this->updatePlayerStats($event->player_id, $request->type, 1); // Add new stats
                 }
             }
+
+            // Synchronize match score if event type or team changed for goal events
+            if ($oldType === 'goal' && $request->type !== 'goal') {
+                // Goal removed -> decrement old team score
+                $this->updateMatchScore($match, $oldTeamId, -1);
+            } elseif ($oldType !== 'goal' && $request->type === 'goal') {
+                // Became a goal -> increment new team score
+                $this->updateMatchScore($match, $event->team_id, 1);
+            } elseif ($oldType === 'goal' && $request->type === 'goal' && $oldTeamId != $event->team_id) {
+                // Goal team changed -> move one goal from old team to new team
+                $this->updateMatchScore($match, $oldTeamId, -1);
+                $this->updateMatchScore($match, $event->team_id, 1);
+            }
+
+            // Invalidate match stats cache as underlying events changed
+            cache()->forget("match_stats_{$match->id}");
+
+            // Broadcast event updated
+            MatchEventChanged::dispatch($match->id, 'updated', [
+                'event' => $event->fresh()->toArray()
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -182,6 +214,14 @@ class MatchEventController extends Controller
 
             // Delete the event
             $event->delete();
+
+            // Invalidate match stats cache as underlying events changed
+            cache()->forget("match_stats_{$match->id}");
+
+            // Broadcast event deleted
+            MatchEventChanged::dispatch($match->id, 'deleted', [
+                'event_id' => (int) $event->id
+            ]);
 
             return response()->json([
                 'success' => true,

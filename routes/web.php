@@ -12,6 +12,11 @@ use App\Http\Controllers\MatchController;
 use App\Http\Controllers\MatchEventController;
 use App\Http\Controllers\MatchCommentaryController;
 use App\Http\Controllers\MatchLineupController;
+use App\Http\Controllers\Console\AnalyticsController;
+use App\Http\Controllers\Console\TournamentController as ConsoleTournamentController;
+use App\Http\Controllers\Console\TeamController as ConsoleTeamController;
+use App\Http\Controllers\Console\PlayerController as ConsolePlayerController;
+use App\Http\Controllers\Console\MatchController as ConsoleMatchController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -39,6 +44,48 @@ Route::prefix('console')->middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+    Route::get('/analytics', [AnalyticsController::class, 'data'])->name('console.analytics');
+
+    Route::prefix('manage')->name('console.manage.')->group(function () {
+        // Tournaments (Admin/Organizer)
+        Route::middleware('role:' . UserRole::ADMIN . ',' . UserRole::ORGANIZER)->group(function () {
+            Route::get('tournaments', [ConsoleTournamentController::class, 'index'])->name('tournaments.index');
+            Route::get('tournaments/data', [ConsoleTournamentController::class, 'data'])->name('tournaments.data');
+            Route::get('tournaments/{tournament}', [ConsoleTournamentController::class, 'show'])->name('tournaments.show');
+            Route::post('tournaments', [ConsoleTournamentController::class, 'store'])->name('tournaments.store');
+            Route::put('tournaments/{tournament}', [ConsoleTournamentController::class, 'update'])->name('tournaments.update');
+            Route::delete('tournaments/{tournament}', [ConsoleTournamentController::class, 'destroy'])->name('tournaments.destroy');
+        });
+
+        // Teams (Admin/Manager)
+        Route::middleware('role:' . UserRole::ADMIN . ',' . UserRole::MANAGER)->group(function () {
+            Route::get('teams', [ConsoleTeamController::class, 'index'])->name('teams.index');
+            Route::get('teams/data', [ConsoleTeamController::class, 'data'])->name('teams.data');
+            Route::get('teams/{team}', [ConsoleTeamController::class, 'show'])->name('teams.show');
+            Route::post('teams', [ConsoleTeamController::class, 'store'])->name('teams.store');
+            Route::put('teams/{team}', [ConsoleTeamController::class, 'update'])->name('teams.update');
+            Route::delete('teams/{team}', [ConsoleTeamController::class, 'destroy'])->name('teams.destroy');
+        });
+
+        // Players (Admin/Manager/Organizer)
+        Route::middleware('role:' . UserRole::ADMIN . ',' . UserRole::MANAGER . ',' . UserRole::ORGANIZER)->group(function () {
+            Route::get('players', [ConsolePlayerController::class, 'index'])->name('players.index');
+            Route::get('players/data', [ConsolePlayerController::class, 'data'])->name('players.data');
+            Route::get('players/{player}', [ConsolePlayerController::class, 'show'])->name('players.show');
+            Route::post('players', [ConsolePlayerController::class, 'store'])->name('players.store');
+            Route::put('players/{player}', [ConsolePlayerController::class, 'update'])->name('players.update');
+            Route::delete('players/{player}', [ConsolePlayerController::class, 'destroy'])->name('players.destroy');
+        });
+
+        // Matches (Admin/Organizer/Committee)
+        Route::middleware('role:' . UserRole::ADMIN . ',' . UserRole::ORGANIZER . ',' . UserRole::COMMITTEE)->group(function () {
+            Route::get('matches', [ConsoleMatchController::class, 'index'])->name('matches.index');
+            Route::get('matches/data', [ConsoleMatchController::class, 'data'])->name('matches.data');
+            Route::put('matches/{match}', [ConsoleMatchController::class, 'update'])->name('matches.update');
+            Route::delete('matches/{match}', [ConsoleMatchController::class, 'destroy'])->name('matches.destroy');
+            Route::post('matches/{match}/status', [ConsoleMatchController::class, 'updateStatus'])->name('matches.status');
+        });
+    });
     Route::middleware('role:' . UserRole::ADMIN)->group(function () {
         Route::prefix('master-data')->group(function () {
             Route::resource('users', UserController::class);
@@ -105,6 +152,7 @@ Route::prefix('matches')->name('matches.')->group(function () {
     Route::put('/{match}/score', [MatchController::class, 'updateScore'])->name('update-score');
     Route::put('/{match}/minute', [MatchController::class, 'updateMinute'])->name('update-minute');
     Route::get('/{match}/management-data', [MatchController::class, 'getMatchManagementData'])->name('management-data');
+    Route::get('/{match}/snapshot', [MatchController::class, 'jsonSnapshot'])->name('snapshot');
 });
 
 // Match Lineup Management Routes

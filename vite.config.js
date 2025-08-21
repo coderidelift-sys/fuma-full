@@ -14,6 +14,9 @@ export default defineConfig({
 
                 'resources/css/match_detail.css',
                 'resources/js/match_detail_script.js',
+                'resources/js/auth/script.js',
+                'resources/js/main.js',
+                'resources/js/app-logistics-dashboard.js',
             ],
             refresh: true,
         }),

@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Player;
 use App\Models\Team;
 use App\Models\Tournament;
+use Carbon\Carbon;
 
 class MatchEventService
 {
@@ -64,7 +65,7 @@ class MatchEventService
     }
 
     /**
-     * Get player statistics for a specific tournament/season
+     * Get player tournament statistics
      */
     public function getPlayerTournamentStats(int $playerId, Collection $matchIds): array
     {
@@ -87,12 +88,21 @@ class MatchEventService
             ->pluck('count', 'type')
             ->toArray();
 
+        // Get player info to determine position
+        $player = DB::table('players')->where('id', $playerId)->first();
+        $cleanSheets = 0;
+
+        // Calculate clean sheets for goalkeepers and defenders
+        if ($player && in_array($player->position, ['GK', 'DEF'])) {
+            $cleanSheets = $this->calculatePlayerCleanSheets($playerId, $matchIds);
+        }
+
         return [
             'goals' => $stats['goal'] ?? 0,
             'assists' => $stats['assist'] ?? 0,
             'yellow_cards' => $stats['yellow_card'] ?? 0,
             'red_cards' => $stats['red_card'] ?? 0,
-            'clean_sheets' => $stats['clean_sheet'] ?? 0,
+            'clean_sheets' => $cleanSheets,
             'matches' => $matchIds->count()
         ];
     }
@@ -173,6 +183,50 @@ class MatchEventService
     }
 
     /**
+     * Calculate clean sheets for a player in specific matches
+     */
+    private function calculatePlayerCleanSheets(int $playerId, Collection $matchIds): int
+    {
+        $cleanSheets = 0;
+
+        foreach ($matchIds as $matchId) {
+            $match = DB::table('matches')->where('id', $matchId)->first();
+            if (!$match) continue;
+
+            // Get player's team ID from the match
+            $playerTeamId = null;
+            if ($match->home_team_id == $playerId || $match->away_team_id == $playerId) {
+                // This is a direct team match, get player's actual team
+                $player = DB::table('players')->where('id', $playerId)->first();
+                $playerTeamId = $player->team_id;
+            } else {
+                // Get player's team from lineup or other source
+                $lineup = DB::table('match_lineups')
+                    ->where('match_id', $matchId)
+                    ->where('player_id', $playerId)
+                    ->first();
+                $playerTeamId = $lineup ? $lineup->team_id : null;
+            }
+
+            if (!$playerTeamId) continue;
+
+            $opponentTeamId = ($match->home_team_id == $playerTeamId) ? $match->away_team_id : $match->home_team_id;
+
+            $opponentGoals = DB::table('match_events')
+                ->where('match_id', $matchId)
+                ->where('team_id', $opponentTeamId)
+                ->where('type', 'goal')
+                ->count();
+
+            if ($opponentGoals == 0) {
+                $cleanSheets++;
+            }
+        }
+
+        return $cleanSheets;
+    }
+
+    /**
      * Get tournament statistics
      */
     public function getTournamentStatistics(int $tournamentId): array
@@ -233,36 +287,114 @@ class MatchEventService
     }
 
     /**
-     * Get player career statistics by season
+     * Get player career statistics by season - OPTIMIZED VERSION
      */
     public function getPlayerCareerStats(int $playerId, Collection $tournaments): Collection
     {
+        if ($tournaments->isEmpty()) {
+            return collect();
+        }
+
+        // Single optimized query untuk semua tournament stats
+        $tournamentIds = $tournaments->pluck('id');
+
+        $stats = DB::table('tournaments as t')
+            ->leftJoin('matches as m', 't.id', '=', 'm.tournament_id')
+            ->leftJoin('match_events as me', function($join) use ($playerId) {
+                $join->on('m.id', '=', 'me.match_id')
+                     ->where('me.player_id', '=', $playerId);
+            })
+            ->whereIn('t.id', $tournamentIds)
+            ->select([
+                't.id as tournament_id',
+                't.name as tournament_name',
+                't.start_date',
+                DB::raw('COUNT(DISTINCT m.id) as matches'),
+                DB::raw("SUM(CASE WHEN me.type = 'goal' THEN 1 ELSE 0 END) as goals"),
+                DB::raw("SUM(CASE WHEN me.type = 'assist' THEN 1 ELSE 0 END) as assists"),
+                DB::raw("SUM(CASE WHEN me.type = 'yellow_card' THEN 1 ELSE 0 END) as yellow_cards"),
+                DB::raw("SUM(CASE WHEN me.type = 'red_card' THEN 1 ELSE 0 END) as red_cards")
+            ])
+            ->groupBy('t.id', 't.name', 't.start_date')
+            ->get();
+
         $careerStats = collect();
 
-        foreach ($tournaments as $tournament) {
-            $matchIds = DB::table('matches')
-                ->where('tournament_id', $tournament->id)
-                ->pluck('id');
-
-            if ($matchIds->isEmpty()) continue;
-
-            $stats = $this->getPlayerTournamentStats($playerId, $matchIds);
+        foreach ($stats as $stat) {
+            // Calculate clean sheets for goalkeepers and defenders
+            $cleanSheets = 0;
+            if ($stat->matches > 0) {
+                $cleanSheets = $this->calculatePlayerCleanSheetsForTournament($playerId, $stat->tournament_id);
+            }
 
             $careerStats->push([
-                'season' => $this->getSeasonFromDate($tournament->start_date),
-                'team' => $tournament->pivot->team_name ?? 'Unknown Team',
-                'tournament' => $tournament->name,
-                'matches' => $stats['matches'],
-                'goals' => $stats['goals'],
-                'assists' => $stats['assists'],
-                'clean_sheets' => $stats['clean_sheets'],
-                'yellow_cards' => $stats['yellow_cards'],
-                'red_cards' => $stats['red_cards'],
-                'minutes' => $stats['matches'] * 90
+                'season' => $this->getSeasonFromDate(Carbon::parse($stat->start_date)),
+                'team' => $tournaments->firstWhere('id', $stat->tournament_id)->pivot->team_name ?? 'Unknown Team',
+                'tournament' => $stat->tournament_name,
+                'matches' => $stat->matches,
+                'goals' => $stat->goals,
+                'assists' => $stat->assists,
+                'clean_sheets' => $cleanSheets,
+                'yellow_cards' => $stat->yellow_cards,
+                'red_cards' => $stat->red_cards,
+                'minutes' => $stat->matches * 90
             ]);
         }
 
         return $careerStats;
+    }
+
+    /**
+     * Calculate clean sheets for a player in a specific tournament
+     */
+    private function calculatePlayerCleanSheetsForTournament(int $playerId, int $tournamentId): int
+    {
+        // Get player info to determine position
+        $player = DB::table('players')->where('id', $playerId)->first();
+        if (!$player || !in_array($player->position, ['GK', 'DEF'])) {
+            return 0;
+        }
+
+        // Get matches where player participated
+        $matchIds = DB::table('match_lineups')
+            ->where('player_id', $playerId)
+            ->join('matches', 'match_lineups.match_id', '=', 'matches.id')
+            ->where('matches.tournament_id', $tournamentId)
+            ->pluck('matches.id');
+
+        if ($matchIds->isEmpty()) {
+            return 0;
+        }
+
+        $cleanSheets = 0;
+
+        foreach ($matchIds as $matchId) {
+            $match = DB::table('matches')->where('id', $matchId)->first();
+            if (!$match) continue;
+
+            // Get player's team from lineup
+            $lineup = DB::table('match_lineups')
+                ->where('match_id', $matchId)
+                ->where('player_id', $playerId)
+                ->first();
+
+            if (!$lineup) continue;
+
+            $playerTeamId = $lineup->team_id;
+            $opponentTeamId = ($match->home_team_id == $playerTeamId) ? $match->away_team_id : $match->home_team_id;
+
+            $opponentGoals = DB::table('match_events')
+                ->where('match_id', $matchId)
+                ->where('team_id', $opponentTeamId)
+                ->where('type', 'goal')
+                ->count();
+
+            if ($opponentGoals == 0) {
+                $cleanSheets++;
+            }
+        }
+
+        return $cleanSheets;
     }
 
     /**

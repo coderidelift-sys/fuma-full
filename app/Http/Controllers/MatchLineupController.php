@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Exception;
+use App\Events\MatchLineupUpdated;
 
 class MatchLineupController extends Controller
 {
@@ -131,6 +132,9 @@ class MatchLineupController extends Controller
 
             MatchLineup::insert($lineupData);
 
+            // Broadcast lineup updated for this team
+            MatchLineupUpdated::dispatch($match->id, (int) $request->team_id);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Lineup set successfully!'
@@ -209,6 +213,9 @@ class MatchLineupController extends Controller
             // Log substitution
             $this->logSubstitutionEvent($match, $request->team_id, $request->player_out_id, $request->player_in_id, $request->minute);
 
+            // Broadcast lineup updated after substitution
+            MatchLineupUpdated::dispatch($match->id, (int) $request->team_id);
+
             return back()->with('success', 'Substitution made successfully!');
         } catch (\Exception $e) {
             Log::error('Error updating lineup: ' . $e->getMessage());
@@ -222,11 +229,21 @@ class MatchLineupController extends Controller
     public function getAvailablePlayers(MatchModel $match, int $teamId): JsonResponse
     {
         try {
-            $players = Player::where('team_id', $teamId)
+            // Ambil pemain yang sudah digunakan di lineup match ini untuk tim terkait
+            $usedPlayerIds = MatchLineup::where('match_id', $match->id)
+                ->where('team_id', $teamId)
+                ->whereType('starting_xi')
+                ->pluck('player_id');
+
+            $playersQuery = Player::where('team_id', $teamId)
+                // Kembalikan pemain yang TERSEDIA: kecualikan yang sudah digunakan di Starting XI
+                ->when($usedPlayerIds->isNotEmpty(), fn($q) => $q->whereNotIn('id', $usedPlayerIds))
+                ->select(['id','team_id','name','position','jersey_number','avatar'])
                 ->with(['team:id,name'])
                 ->orderBy('position')
-                ->orderBy('name')
-                ->get();
+                ->orderBy('name');
+
+            $players = $playersQuery->get();
 
             $data = [
                 'players' => $players,

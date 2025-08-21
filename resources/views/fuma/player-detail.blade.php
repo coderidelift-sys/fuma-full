@@ -392,40 +392,48 @@
                             <div class="row">
                                 <div class="col-6 mb-3">
                                     <div class="stat-card p-3 text-center">
-                                        <div class="stat-value">{{ $player->goals_scored ?? 0 }}</div>
+                                        <div class="stat-value">{{ $season_stats['goals'] ?? 0 }}</div>
                                         <div class="stat-label">Goals</div>
                                     </div>
                                 </div>
                                 <div class="col-6 mb-3">
                                     <div class="stat-card p-3 text-center">
-                                        <div class="stat-value">{{ $player->assists ?? 0 }}</div>
+                                        <div class="stat-value">{{ $season_stats['assists'] ?? 0 }}</div>
                                         <div class="stat-label">Assists</div>
                                     </div>
                                 </div>
                                 <div class="col-6 mb-3">
                                     <div class="stat-card p-3 text-center">
-                                        <div class="stat-value">{{ $matches_count ?? 0 }}</div>
+                                        <div class="stat-value">{{ $season_stats['matches_count'] ?? 0 }}</div>
                                         <div class="stat-label">Matches</div>
                                     </div>
                                 </div>
                                 <div class="col-6 mb-3">
                                     <div class="stat-card p-3 text-center">
-                                        <div class="stat-value">{{ $minutes_played ?? 0 }}'</div>
+                                        <div class="stat-value">{{ $season_stats['minutes_played'] ?? 0 }}'</div>
                                         <div class="stat-label">Minutes</div>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="stat-card p-3 text-center">
-                                        <div class="stat-value">{{ $player->yellow_cards ?? 0 }}</div>
+                                        <div class="stat-value">{{ $season_stats['yellow_cards'] ?? 0 }}</div>
                                         <div class="stat-label">Yellow Cards</div>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="stat-card p-3 text-center">
-                                        <div class="stat-value">{{ $player->red_cards ?? 0 }}</div>
+                                        <div class="stat-value">{{ $season_stats['red_cards'] ?? 0 }}</div>
                                         <div class="stat-label">Red Cards</div>
                                     </div>
                                 </div>
+                                @if(in_array($player->position, ['GK', 'DEF']))
+                                <div class="col-6">
+                                    <div class="stat-card p-3 text-center">
+                                        <div class="stat-value">{{ $season_stats['clean_sheets'] ?? 0 }}</div>
+                                        <div class="stat-label">Clean Sheets</div>
+                                    </div>
+                                </div>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -609,7 +617,7 @@
 
                             <!-- Statistics Tab -->
                             <div class="tab-pane fade" id="stats">
-                                <h4 class="mb-4">Season Statistics</h4>
+                                <h4 class="mb-4">Season Statistics (Career Total)</h4>
                                 <div class="table-responsive">
                                     <table class="table table-bordered">
                                         <thead class="bg-light">
@@ -618,6 +626,7 @@
                                                 <th>Matches</th>
                                                 <th>Goals</th>
                                                 <th>Assists</th>
+                                                <th>Clean Sheets</th>
                                                 <th>Yellow</th>
                                                 <th>Red</th>
                                                 <th>Minutes</th>
@@ -626,36 +635,13 @@
                                         <tbody>
                                             <tr>
                                                 <td>All Competitions</td>
-                                                <td>{{ $matches_count ?? 0 }}</td>
-                                                <td>
-                                                    @if (isset($recent_matches) && $recent_matches->count() > 0)
-                                                        {{ $recent_matches->sum(function ($match) {return $match->player_performance['goals'] ?? 0;}) }}
-                                                    @else
-                                                        {{ $player->goals_scored ?? 0 }}
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    @if (isset($recent_matches) && $recent_matches->count() > 0)
-                                                        {{ $recent_matches->sum(function ($match) {return $match->player_performance['assists'] ?? 0;}) }}
-                                                    @else
-                                                        {{ $player->assists ?? 0 }}
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    @if (isset($recent_matches) && $recent_matches->count() > 0)
-                                                        {{ $recent_matches->sum(function ($match) {return $match->player_performance['yellow_cards'] ?? 0;}) }}
-                                                    @else
-                                                        {{ $player->yellow_cards ?? 0 }}
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    @if (isset($recent_matches) && $recent_matches->count() > 0)
-                                                        {{ $recent_matches->count() > 0? $recent_matches->sum(function ($match) {return $match->player_performance['red_cards'] ?? 0;}): 0 }}
-                                                    @else
-                                                        {{ $player->red_cards ?? 0 }}
-                                                    @endif
-                                                </td>
-                                                <td>{{ $minutes_played ?? 0 }}'</td>
+                                                <td>{{ $season_stats['matches_count'] ?? 0 }}</td>
+                                                <td>{{ $season_stats['goals'] ?? 0 }}</td>
+                                                <td>{{ $season_stats['assists'] ?? 0 }}</td>
+                                                <td>{{ $season_stats['clean_sheets'] ?? 0 }}</td>
+                                                <td>{{ $season_stats['yellow_cards'] ?? 0 }}</td>
+                                                <td>{{ $season_stats['red_cards'] ?? 0 }}</td>
+                                                <td>{{ $season_stats['minutes_played'] ?? 0 }}'</td>
                                             </tr>
                                         </tbody>
                                     </table>

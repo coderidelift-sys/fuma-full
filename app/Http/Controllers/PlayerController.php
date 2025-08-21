@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Player;
 use App\Models\Team;
 use App\Models\MatchModel;
+use App\Services\CacheService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -23,7 +24,12 @@ class PlayerController extends Controller
      */
     public function index(): View
     {
-        $teams = Team::all();
+        // Dropdown tim jarang berubah; cache ringan + pilih kolom minimal
+        $teams = CacheService::remember(
+            CacheService::key('ui', 'teams_min'),
+            'ui',
+            fn () => Team::query()->select('id', 'name')->orderBy('name')->get()
+        );
         return view('fuma.players', compact('teams'));
     }
 
@@ -60,11 +66,12 @@ class PlayerController extends Controller
 
             $players = $query->orderBy('name')->paginate(10);
 
-            // Cache the response for 5 minutes if no search/filter applied
+            // Cache data dengan standard duration
             if (!$request->hasAny(['search', 'position', 'team', 'nationality'])) {
-                return cache()->remember('players_data_page_' . $request->get('page', 1), 300, function () use ($players) {
-                    return response()->json($players);
-                });
+                $page = (int) $request->get('page', 1);
+                $cacheKey = CacheService::paginatedKey('players_data', $page);
+                $data = CacheService::remember($cacheKey, 'list', fn () => $players->toArray());
+                return response()->json($data);
             }
 
             return response()->json($players);
@@ -143,8 +150,12 @@ class PlayerController extends Controller
     {
         $player->load(['team']);
 
-        // Get teams for edit form
-        $teams = Team::all();
+        // Data untuk form edit: cache ringan + select minimal agar cepat
+        $teams = CacheService::remember(
+            CacheService::key('ui', 'teams_min'),
+            'ui',
+            fn () => Team::query()->select('id', 'name')->orderBy('name')->get()
+        );
 
         // Get player's matches
         $matches = MatchModel::where('home_team_id', $player->team_id)
@@ -154,11 +165,22 @@ class PlayerController extends Controller
             ->limit(10)
             ->get();
 
-        // Calculate statistics
-        $matches_count = $matches->count();
-        $minutes_played = $matches_count * 90; // Assuming 90 minutes per match
+        // Calculate season statistics from career stats (total accumulation)
+        $careerStats = $player->career_stats;
+        $totalCareerStats = $player->total_career_stats;
 
-        // Get recent matches with player performance data using service
+        // Season statistics should be total from career
+        $season_stats = [
+            'matches_count' => $totalCareerStats['matches'] ?? 0,
+            'goals' => $totalCareerStats['goals'] ?? 0,
+            'assists' => $totalCareerStats['assists'] ?? 0,
+            'yellow_cards' => $totalCareerStats['yellow_cards'] ?? 0,
+            'red_cards' => $totalCareerStats['red_cards'] ?? 0,
+            'clean_sheets' => $totalCareerStats['clean_sheets'] ?? 0,
+            'minutes_played' => $totalCareerStats['minutes'] ?? 0,
+        ];
+
+        // Get recent matches for display purposes (not for season stats calculation)
         $recent_matches = $matches->take(5);
 
         if (app()->bound('App\Services\MatchEventService')) {
@@ -213,8 +235,7 @@ class PlayerController extends Controller
         return view('fuma.player-detail', compact(
             'player',
             'teams',
-            'matches_count',
-            'minutes_played',
+            'season_stats',
             'recent_matches',
             'careerStats',
             'totalCareerStats'

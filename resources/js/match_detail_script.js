@@ -18,9 +18,6 @@
     function showToastr(type, message) {
         if (typeof toastr !== 'undefined') {
             toastr[type](message);
-        } else {
-            // Fallback to alert if toastr not available
-            alert(message);
         }
     }
 
@@ -431,17 +428,47 @@
     }
 
     // Reset lineup
+    function uiConfirm(message){
+        return new Promise((resolve)=>{
+            try{
+                const modal = document.createElement('div');
+                modal.className = 'modal fade';
+                modal.tabIndex = -1;
+                modal.innerHTML = `
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header"><h5 class="modal-title">Confirm</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body"><p>${message}</p></div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" id="__confirmOkBtn">OK</button>
+                        </div>
+                    </div>
+                </div>`;
+                document.body.appendChild(modal);
+                const bsModal = new bootstrap.Modal(modal);
+                modal.addEventListener('hidden.bs.modal', ()=>{ modal.remove(); });
+                modal.querySelector('#__confirmOkBtn').addEventListener('click', ()=>{ resolve(true); bsModal.hide(); });
+                bsModal.show();
+            }catch(_){ resolve(window.confirm(message)); }
+        });
+    }
+
     function resetLineup() {
-        if (confirm('Are you sure you want to reset the lineup? This will clear all selected players.')) {
-            currentLineup = {
-                starting_xi: [],
-                substitutes: [],
-                bench: []
-            };
-            renderLineup();
-            updateSaveButton();
-            updateStatusBar();
-        }
+        uiConfirm('Are you sure you want to reset the lineup? This will clear all selected players.')
+            .then((ok)=>{
+                if(!ok) return;
+                currentLineup = {
+                    starting_xi: [],
+                    substitutes: [],
+                    bench: []
+                };
+                renderLineup();
+                updateSaveButton();
+                updateStatusBar();
+            });
     }
 
     // Save lineup
@@ -743,7 +770,7 @@
 
     // Match Control Functions
     function startMatch() {
-        if (confirm('Are you sure you want to start this match?')) {
+        uiConfirm('Are you sure you want to start this match?').then((ok)=>{ if(!ok) return;
             fetch(urlStartMatch, {
                     method: 'POST',
                     headers: {
@@ -762,11 +789,11 @@
                     console.error('Error starting match:', error);
                     showToastr('error', 'Error starting match');
                 });
-        }
+        });
     }
 
     function pauseMatch() {
-        if (confirm('Are you sure you want to pause this match?')) {
+        uiConfirm('Are you sure you want to pause this match?').then((ok)=>{ if(!ok) return;
             fetch(urlPauseMatch, {
                     method: 'POST',
                     headers: {
@@ -786,11 +813,11 @@
                     console.error('Error pausing match:', error);
                     showToastr('error', 'Error pausing match');
                 });
-        }
+        });
     }
 
     function resumeMatch() {
-        if (confirm('Are you sure you want to resume this match?')) {
+        uiConfirm('Are you sure you want to resume this match?').then((ok)=>{ if(!ok) return;
             fetch(urlResumeMatch, {
                     method: 'POST',
                     headers: {
@@ -810,7 +837,7 @@
                     console.error('Error resuming match:', error);
                     showToastr('error', 'Error resuming match');
                 });
-        }
+        });
     }
 
     // Modal show functions
@@ -1061,7 +1088,7 @@
     }
 
     function deleteCommentary(commentaryId) {
-        if (confirm('Are you sure you want to delete this commentary?')) {
+        uiConfirm('Are you sure you want to delete this commentary?').then((ok)=>{ if(!ok) return;
             fetch(`${urlDeleteComment}/${commentaryId}`, {
                 method: 'DELETE',
                 headers: {
@@ -1081,5 +1108,5 @@
                 console.error('Error deleting commentary:', error);
                 showToastr('error', 'Network error: ' + error.message);
             });
-        }
+        });
     }
